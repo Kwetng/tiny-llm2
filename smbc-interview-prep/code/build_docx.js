@@ -208,7 +208,7 @@ while (i < lines.length) {
 
 const doc = new Document({
   creator: "Kwet",
-  title: "SMBC Head of AI Engineering — Interview Preparation",
+  title: process.env.DOC_HEADER || "SMBC Head of AI Engineering — Interview Preparation",
   features: { updateFields: true },
   styles: {
     default: { document: { run: { font: FONT, size: 21 }, paragraph: { spacing: { line: 276, lineRule: LineRuleType.AUTO } } } },
@@ -244,7 +244,7 @@ const doc = new Document({
   sections: [{
     properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } } },
     headers: { default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: "SMBC Head of AI Engineering — Interview Preparation", size: 16, color: "808080" })] })] }) },
+      children: [new TextRun({ text: process.env.DOC_HEADER || "SMBC Head of AI Engineering — Interview Preparation", size: 16, color: "808080" })] })] }) },
     footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER,
       children: [new TextRun({ children: ["Page ", PageNumber.CURRENT, " of ", PageNumber.TOTAL_PAGES], size: 16, color: "808080" })] })] }) },
     children,
