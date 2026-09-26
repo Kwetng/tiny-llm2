@@ -1,0 +1,73 @@
+{
+  "decision_model": "LOCAL STAND-IN (not Jev) - set TYPESAFE_API_KEY to use the real model",
+  "results": {
+    "Local stand-in (zero labels)": {
+      "auc": 0.6645676547381354,
+      "brier": 0.07507956933687158,
+      "labels_used": 0
+    },
+    "Challenger scorecard (600 labels)": {
+      "auc": 0.6728613116264783,
+      "brier": 0.042844689239399415,
+      "labels_used": 600
+    },
+    "Oracle (true synthetic PD)": {
+      "auc": 0.7306097373675319,
+      "brier": 0.039926545559643534,
+      "labels_used": null
+    }
+  },
+  "calibration": [
+    [
+      "0%-2%",
+      111,
+      0.009443172484132222,
+      0.009009009009009009
+    ],
+    [
+      "2%-5%",
+      67,
+      0.033803134927893025,
+      0.014925373134328358
+    ],
+    [
+      "5%-10%",
+      56,
+      0.07350284065961103,
+      0.07142857142857142
+    ],
+    [
+      "10%-20%",
+      61,
+      0.14346926298533963,
+      0.06557377049180328
+    ],
+    [
+      "20%-100%",
+      105,
+      0.3920083137359624,
+      0.06666666666666667
+    ]
+  ],
+  "bands": {
+    "APPROVE (recommend)": {
+      "n": 136,
+      "realised_default_rate": 0.007352941176470588
+    },
+    "REFER to credit committee": {
+      "n": 98,
+      "realised_default_rate": 0.05102040816326531
+    },
+    "DECLINE (recommend)": {
+      "n": 166,
+      "realised_default_rate": 0.06626506024096386
+    }
+  },
+  "versions": {
+    "decision_model": "local-stand-in",
+    "questions": "edf1045b597f",
+    "policy": "543979278b96",
+    "tiny_gpt": "31fa26fa55ec",
+    "challenger": "64a7b30d9102"
+  }
+}
