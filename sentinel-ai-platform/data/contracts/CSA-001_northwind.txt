@@ -1,0 +1,25 @@
+CREDIT SUPPORT ANNEX
+to the Schedule to the ISDA 2002 Master Agreement
+Reference: CSA-001
+dated as of 12 March 2019
+between SENTINEL BANK INTERNATIONAL PLC ("Party A") and NORTHWIND ENERGY PLC ("Party B")
+
+Paragraph 11. Elections and Variables
+
+(a) Base Currency and Eligible Currency.
+(i) "Base Currency" means GBP.
+
+(b) Credit Support Obligations.
+(i) "Threshold" means, with respect to Party A: GBP 5,000,000; with respect to Party B: GBP 2,500,000.
+(ii) "Minimum Transfer Amount" means, with respect to each party, GBP 250,000.
+(iii) "Independent Amount" means, with respect to each party, zero.
+(iv) Eligible Credit Support. The following items qualify as Eligible Credit Support, with the Valuation Percentage shown:
+  (A) cash in GBP: 100%
+  (B) UK Gilts with remaining maturity of not more than 5 years: 98%
+  (C) UK Gilts with remaining maturity of more than 5 years: 95%
+
+(c) Valuation and Timing.
+(i) "Valuation Agent" means Party A.
+(ii) "Notification Time" means 1:00 p.m., London time, on a Local Business Day.
+
+(d) Governing Law. This Annex is governed by English law.

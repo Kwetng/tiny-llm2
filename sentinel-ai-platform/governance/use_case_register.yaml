@@ -1,0 +1,59 @@
+# AI use-case inventory and risk tiering (intake records).
+# Every use case is registered here before any build starts. The tier sets the controls
+# (see governance/control_mapping.md); the platform reads use-case ids from sentinel/config.py.
+
+use_cases:
+  - id: policy_qa
+    name: Credit and markets policy assistant
+    business_owner: Head of Credit Risk Policy
+    smf_accountable: SMF4 Chief Risk Officer
+    users: Relationship managers, traders, risk officers (EMEA)
+    data_classes: [internal, confidential, restricted]
+    decision_impact: Informs staff; does not make or recommend client decisions
+    individuals_affected: false
+    eu_ai_act: Not high-risk (internal information retrieval); Article 50 transparency applies (users are told they are using AI)
+    model_risk_tier: 2
+    platform_risk_tier: medium
+    human_oversight: Staff remain accountable for use of any answer (GR-001 §2.1)
+    key_risks: [hallucination, information-barrier leakage, prompt injection]
+    controls: [entitlement pre-filter, grounding check, abstention, guard, audit log, evaluation gate]
+
+  - id: csa_extraction
+    name: Credit Support Annex term extraction
+    business_owner: Head of Collateral Operations
+    smf_accountable: SMF24 Chief Operations Officer
+    users: Collateral operations analysts
+    data_classes: [confidential]
+    decision_impact: Feeds margin calls and counterparty exposure; errors have financial and capital impact
+    individuals_affected: false
+    eu_ai_act: Not high-risk
+    model_risk_tier: 1
+    platform_risk_tier: high
+    human_oversight: Low-confidence fields go to a review queue; nothing reaches the collateral system unreviewed
+    key_risks: [wrong threshold or MTA, missed amendment]
+    controls: [schema validation, confidence routing, clause lineage, golden-set field accuracy, amendment resolution]
+
+  - id: ops_agent
+    name: Covenant and collateral operations agent
+    business_owner: COO, Corporate Banking
+    smf_accountable: SMF24 Chief Operations Officer
+    users: Relationship managers and operations managers
+    data_classes: [confidential]
+    decision_impact: Drafts escalations; any external or irreversible action requires human approval
+    individuals_affected: false
+    eu_ai_act: Not high-risk
+    model_risk_tier: 1
+    platform_risk_tier: high
+    human_oversight: Approver role, segregation of duties, step budget, full trace
+    key_risks: [excessive agency, acting beyond the user's entitlements]
+    controls: [least-privilege tools, approval queue, refusal of unsupported tasks, audit log]
+
+  - id: retail_credit_scoring
+    name: (Rejected example) GenAI scoring of personal loan applicants
+    business_owner: n/a
+    decision_impact: Creditworthiness of natural persons
+    individuals_affected: true
+    eu_ai_act: HIGH-RISK (Annex III 5(b)) - conformity assessment, human oversight, logging, data governance required
+    model_risk_tier: 1
+    platform_risk_tier: not permitted without exception
+    decision: Not approved for the GenAI platform; route to the credit scoring model governance process

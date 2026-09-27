@@ -1,0 +1,11 @@
+AMENDMENT AGREEMENT No. 1
+Reference: CSA-001-A1
+Amending: CSA-001
+between SENTINEL BANK INTERNATIONAL PLC ("Party A") and NORTHWIND ENERGY PLC ("Party B")
+
+The parties agree that, with effect from 1 July 2025, the Credit Support Annex referenced CSA-001 is amended as follows:
+
+1. The Threshold with respect to Party B is amended to GBP 1,000,000.
+2. The Minimum Transfer Amount with respect to each party is amended to GBP 100,000.
+
+All other terms of the Credit Support Annex remain unchanged.

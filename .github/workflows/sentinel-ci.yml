@@ -1,0 +1,87 @@
+name: sentinel-ai-platform CI
+
+# Every change to code, prompts, policies, thresholds or infrastructure goes through the same gates.
+# A failed gate blocks the merge. Evaluation and scan reports are kept as build artifacts - they are
+# the automated evidence for model risk management (SS1/23 principles 3 and 4).
+
+on:
+  push:
+    paths: ["sentinel-ai-platform/**", ".github/workflows/sentinel-ci.yml"]
+  pull_request:
+    paths: ["sentinel-ai-platform/**", ".github/workflows/sentinel-ci.yml"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: sentinel-ai-platform
+
+jobs:
+  test:
+    name: Unit and API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+
+  evaluation-gate:
+    name: Evaluation gate (golden set, red team, extraction)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt
+      - name: Run evaluations against release thresholds
+        run: python -m evals.run_evals
+      - name: Build the model risk evidence pack
+        if: always()
+        run: python governance/build_evidence_pack.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evaluation-evidence
+          path: |
+            sentinel-ai-platform/evals/reports/
+            sentinel-ai-platform/governance/evidence_pack.md
+
+  security:
+    name: Security scans (code, dependencies, secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install bandit pip-audit
+      - name: Static analysis
+        run: bandit -r sentinel -ll
+      - name: Dependency vulnerabilities
+        run: pip-audit -r requirements.txt
+      - name: Secret scanning
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+
+  infrastructure:
+    name: Infrastructure-as-code scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform format and validate
+        run: |
+          for d in infra/terraform/azure infra/terraform/gcp; do
+            terraform -chdir=$d fmt -check -recursive
+            terraform -chdir=$d init -backend=false -input=false
+            terraform -chdir=$d validate
+          done
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install checkov
+      - name: Checkov policy scan
+        run: checkov -d infra/terraform --framework terraform --compact --quiet

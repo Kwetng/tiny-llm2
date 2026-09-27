@@ -1,0 +1,21 @@
+CREDIT SUPPORT ANNEX
+to the Schedule to the ISDA 2002 Master Agreement
+Reference: CSA-002
+dated as of 4 October 2021
+between SENTINEL BANK INTERNATIONAL PLC ("Party A") and HELIOS ASSET MANAGEMENT LLP ("Party B")
+
+Paragraph 11. Elections and Variables
+
+(a) "Base Currency" means EUR.
+
+(b) Credit Support Obligations.
+(i) "Threshold" means, with respect to Party A: zero; with respect to Party B: zero.
+(ii) "Minimum Transfer Amount" means, with respect to each party, EUR 500,000.
+(iii) "Independent Amount" means, with respect to Party B, 2% of the aggregate notional of all Transactions.
+(iv) Eligible Credit Support:
+  (A) cash in EUR: 100%
+  (B) German Bunds with remaining maturity of not more than 10 years: 97%
+
+(c) "Valuation Agent" means Party A.
+(d) "Notification Time" means 12:00 noon, London time, on a Local Business Day.
+(e) Governing Law. This Annex is governed by English law.

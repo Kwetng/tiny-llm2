@@ -1,0 +1,75 @@
+{
+  "generated": "2026-09-27 09:07:09",
+  "metrics": {
+    "requests": 200,
+    "blocked": 9,
+    "abstention_rate": 0.24083769633507854,
+    "block_rate": 0.045,
+    "grounding_failure_rate": 0.0,
+    "quarantine_events": 22,
+    "pii_redactions": 0,
+    "latency_p50_ms": 4.9,
+    "latency_p95_ms": 5.9,
+    "model_mix": {
+      "local-extractive": 191
+    },
+    "cost_gbp_by_business_line": {
+      "group": 0.0,
+      "corporate_banking": 0.0,
+      "capital_markets": 0.0
+    }
+  },
+  "windows": [
+    {
+      "from": 1,
+      "to": 50,
+      "mean_similarity_to_reference": 1.0,
+      "abstention_rate": 0.0
+    },
+    {
+      "from": 51,
+      "to": 100,
+      "mean_similarity_to_reference": 0.947,
+      "abstention_rate": 0.06
+    },
+    {
+      "from": 101,
+      "to": 150,
+      "mean_similarity_to_reference": 0.615,
+      "abstention_rate": 0.42
+    },
+    {
+      "from": 151,
+      "to": 191,
+      "mean_similarity_to_reference": 0.52,
+      "abstention_rate": 0.537
+    }
+  ],
+  "top_unanswered": [
+    [
+      "Who approves a potential sanctions match before a payment is released?",
+      15
+    ],
+    [
+      "What sanctions screening is required before onboarding a shipping client?",
+      11
+    ],
+    [
+      "Which sanctions lists must be screened for a new counterparty?",
+      11
+    ],
+    [
+      "How often must existing clients be re-screened against sanctions lists?",
+      9
+    ]
+  ],
+  "alerts": [
+    "Input drift in requests 151-191: similarity to the reference set 0.52 (below 0.6); abstention 53.7%",
+    "Abstention rose from 0.0% to 53.7% between the first and last window"
+  ],
+  "audit_chain": {
+    "intact": true,
+    "records": 200,
+    "first_broken": null
+  }
+}

@@ -7,5 +7,7 @@ Small language models built from scratch, and how to use them alongside Jev (Typ
 | `tiny_llm.py` | The first TinyLLM: a word-level next-word predictor in a few lines of PyTorch |
 | [`smbc-interview-prep/`](smbc-interview-prep/) | Interview preparation pack for Head of AI Engineering (SMBC EMEA), `mini_gpt.py` (a GPT from scratch), and **Jev + tiny LLM for credit decisions** |
 | [`jev-fraud-detection/`](jev-fraud-detection/) | **Jev + mini LLM for real-time fraud detection** on card payments and bank transfers, with a plain-English guide |
+| [`btc-expert-panel/`](btc-expert-panel/) | **A panel of AI experts on Bitcoin**: models from the quant research and neuroplastic world-model projects, Jev and the mini LLM, backtested walk-forward on real data, with a dashboard |
+| [`sentinel-ai-platform/`](sentinel-ai-platform/) | **A governed GenAI platform for a bank**: AI gateway, entitlement-aware RAG, CSA extraction, controlled agent, evaluation gate, monitoring, Azure and GCP Terraform, and an SS1/23 evidence pack |
 
 All data in this repository is synthetic, and the code is for learning, not production use. Where the Jev API was not reachable, the pipelines use a clearly labelled offline stand-in that is **not Jev**. Set `TYPESAFE_API_KEY` to run them against the real model.

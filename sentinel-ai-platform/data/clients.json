@@ -1,0 +1,11 @@
+{
+  "NORTHWIND ENERGY PLC": {"business_line": "corporate_banking", "rating": 6, "limit_gbp": 40000000, "utilised_gbp": 31000000,
+                            "leverage_covenant": 3.5, "leverage_tested": 3.9, "interest_cover_tested": 3.4, "watchlist": false,
+                            "relationship_manager": "alice", "csa": "CSA-001"},
+  "ORCA SHIPPING HOLDINGS LTD": {"business_line": "corporate_banking", "rating": 5, "limit_gbp": 25000000, "utilised_gbp": 12500000,
+                                 "leverage_covenant": 4.0, "leverage_tested": 3.1, "interest_cover_tested": 4.8, "watchlist": false,
+                                 "relationship_manager": "alice", "csa": "CSA-003"},
+  "HELIOS ASSET MANAGEMENT LLP": {"business_line": "capital_markets", "rating": 3, "limit_gbp": 60000000, "utilised_gbp": 22000000,
+                                  "leverage_covenant": null, "leverage_tested": null, "interest_cover_tested": null, "watchlist": false,
+                                  "relationship_manager": "bob", "csa": "CSA-002"}
+}
