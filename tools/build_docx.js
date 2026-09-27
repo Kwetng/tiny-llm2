@@ -100,6 +100,7 @@ while (i < lines.length) {
     children.push(new TableOfContents("Contents", { hyperlink: true, headingStyleRange: "1-2" }));
     i++; continue;
   }
+  if (t.startsWith("<!--")) { i++; continue; }   // single-line HTML comments (markers) are not printed
   const title = t.match(/^\\title (.+)$/);
   if (title) {
     children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 2400, after: 240 },

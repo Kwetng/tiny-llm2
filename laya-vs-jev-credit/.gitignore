@@ -1,0 +1,3 @@
+outputs/plumbing_test/
+outputs/cache_*.jsonl
+__pycache__/

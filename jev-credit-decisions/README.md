@@ -31,6 +31,8 @@ This project uses **Jev**, TypeSafe AI's "System One" decision model, to estimat
 
 The stand-in ranked borrowers about as well as the trained scorecard, but it overstated risk at the top: an average 39% PD where 6.7% defaulted. The calibration check exists to catch exactly that. The tiny LLM also invented facts in one memo, which is why its narrative is marked for review and never contains figures.
 
+**Open-source alternative:** [`laya-vs-jev-credit`](../laya-vs-jev-credit/) runs Laya, an Apache-2.0 model you host yourself, against Jev on these same borrowers.
+
 ## Run it
 
 ```bash
