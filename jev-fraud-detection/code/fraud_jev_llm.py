@@ -567,3 +567,35 @@ with open(os.path.join(OUT, "model_card.md"), "w") as fh:
              "- Fraud patterns shift: retrain the mini LLM and challenger regularly and monitor alert precision weekly.\n"
              f"\n## Versions\n\n```\n{json.dumps(VERSIONS, indent=2)}\n```\n")
 print(f"\nSaved case files, audit_log.jsonl, metrics.json, pr_curves.json and model_card.md to ./{OUT}/")
+
+# =============================================================================
+# 8. OPTIONAL: EXPORT A MODEL BUNDLE for the scoring service in ../gcp/
+#    python fraud_jev_llm.py --offline --export-bundle ../gcp/model_bundle
+# =============================================================================
+if "--export-bundle" in sys.argv:
+    import joblib
+    bdir = sys.argv[sys.argv.index("--export-bundle") + 1]
+    os.makedirs(bdir, exist_ok=True)
+    torch.save(gpt.state_dict(), os.path.join(bdir, "mini_llm.pt"))
+    np.save(os.path.join(bdir, "baseline_surprise.npy"), baseline_surprise)
+    joblib.dump(chal_llm, os.path.join(bdir, "challenger.joblib"))
+    engine = {"mini_llm": {"alphabet": ALPHABET, "block": BLOCK, "n_embd": NE, "n_head": NH, "n_layer": NL},
+              "channels": CH, "thresholds": CUT, "capacity": CAPACITY, "questions": QUESTIONS, "warnings": WARN,
+              "overrides": {"card_testing_txns_last_hour": 10, "llm_rule_amount_ratio": 5, "llm_rule_surprise_percentile": 99.5,
+                            "confident_model": 0.9},
+              "versions": VERSIONS, "trained_on": f"{N_EVAL} synthetic transactions (seed {SEED})"}
+    json.dump(engine, open(os.path.join(bdir, "engine.json"), "w"), indent=1)
+    samples = []
+    for label, p in picks:
+        if p is None:
+            continue
+        k = idx_test[p]; t = txns[k]
+        a, why = decide(k, p_ens[k], CUT, pj=p_jev, pc=p_chal)
+        samples.append({"name": label,
+                        "transaction": {f: t[f] for f in ("customer_id", "amount", "channel", "description", "hour", "abroad",
+                                                          "median", "new_payee", "payee_age", "new_device", "password_reset",
+                                                          "mins_since_login", "txns_last_hour", "unusual_hour", "on_mule_list")},
+                        "expected": {"action": a, "risk": float(p_ens[k]), "p_jev": float(p_jev[k]), "p_challenger": float(p_chal[k]),
+                                     "surprise_bits": float(s_all[k]), "overrides": why}})
+    json.dump(samples, open(os.path.join(bdir, "samples.json"), "w"), indent=1)
+    print(f"Exported model bundle ({len(samples)} sample transactions) to {bdir}")

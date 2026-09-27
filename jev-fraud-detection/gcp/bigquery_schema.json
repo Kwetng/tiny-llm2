@@ -1,0 +1,85 @@
+[
+ {
+  "name": "decision_id",
+  "type": "STRING",
+  "mode": "REQUIRED",
+  "description": "Unique id of this decision"
+ },
+ {
+  "name": "transaction_id",
+  "type": "STRING",
+  "description": "The payment system's own id"
+ },
+ {
+  "name": "customer_id",
+  "type": "INT64"
+ },
+ {
+  "name": "decided_at",
+  "type": "TIMESTAMP",
+  "mode": "REQUIRED"
+ },
+ {
+  "name": "amount_gbp",
+  "type": "FLOAT64"
+ },
+ {
+  "name": "channel",
+  "type": "STRING"
+ },
+ {
+  "name": "action",
+  "type": "STRING",
+  "mode": "REQUIRED",
+  "description": "ALLOW, STEP-UP, HOLD or BLOCK"
+ },
+ {
+  "name": "risk",
+  "type": "FLOAT64",
+  "description": "Average of Jev and the challenger"
+ },
+ {
+  "name": "p_jev",
+  "type": "FLOAT64"
+ },
+ {
+  "name": "jev_fraud_type",
+  "type": "STRING"
+ },
+ {
+  "name": "p_challenger",
+  "type": "FLOAT64"
+ },
+ {
+  "name": "llm_surprise_bits",
+  "type": "FLOAT64"
+ },
+ {
+  "name": "overrides",
+  "type": "STRING",
+  "mode": "REPEATED"
+ },
+ {
+  "name": "reason_codes",
+  "type": "STRING",
+  "mode": "REPEATED"
+ },
+ {
+  "name": "decision_model",
+  "type": "STRING"
+ },
+ {
+  "name": "model_versions",
+  "type": "STRING",
+  "description": "JSON with the version of every model"
+ },
+ {
+  "name": "input_hash",
+  "type": "STRING",
+  "description": "Fingerprint of what the models saw"
+ },
+ {
+  "name": "latency_ms",
+  "type": "FLOAT64"
+ }
+]

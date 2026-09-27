@@ -1,0 +1,64 @@
+{
+ "mini_llm": {
+  "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .*/-&'\n",
+  "block": 64,
+  "n_embd": 96,
+  "n_head": 4,
+  "n_layer": 3
+ },
+ "channels": [
+  "card_present",
+  "card_online",
+  "faster_payment"
+ ],
+ "thresholds": {
+  "BLOCK": 0.7352884379930221,
+  "HOLD": 0.32460808708083355,
+  "STEP-UP": 0.08084940639891815
+ },
+ "capacity": {
+  "BLOCK": 0.004,
+  "HOLD": 0.012,
+  "STEP-UP": 0.04
+ },
+ "questions": {
+  "is_fraud": {
+   "type": "noul",
+   "instructions": "Is this transaction fraudulent or the result of a scam - that is, NOT a genuine payment that the account holder knowingly intends for its real, legitimate recipient?",
+   "criteria": {
+    "true": "Signs of stolen card use, account takeover by a third party, or a customer being manipulated into paying a fraudster (for example 'safe account', fake HMRC, fake investment, changed bank details).",
+    "false": "Consistent with the customer's normal behaviour, or an unusual but plausible genuine payment."
+   }
+  },
+  "fraud_type": {
+   "type": "choice",
+   "instructions": "Which pattern best describes this transaction?",
+   "criteria": {
+    "card fraud (card not present)": "Stolen card details used online, often small test payments first.",
+    "account takeover": "Someone other than the customer has taken control of the account or device.",
+    "authorised push payment scam": "The real customer is being tricked into sending money to a fraudster.",
+    "genuine": "A genuine transaction by the customer."
+   }
+  }
+ },
+ "warnings": {
+  "authorised push payment scam": "Stop - this could be a scam. Your bank, HMRC and the police will never ask you to move money to a 'safe account' or pay a fee to release funds. If someone is telling you what to do, hang up and call us on the number on your card.",
+  "account takeover": "We have noticed a new device and unusual activity. Please confirm this payment in your app.",
+  "card fraud (card not present)": "Please confirm this card payment in your app.",
+  "genuine": "Please confirm this payment in your app."
+ },
+ "overrides": {
+  "card_testing_txns_last_hour": 10,
+  "llm_rule_amount_ratio": 5,
+  "llm_rule_surprise_percentile": 99.5,
+  "confident_model": 0.9
+ },
+ "versions": {
+  "decision_model": "local-stand-in",
+  "questions": "eb2fba19fcf6",
+  "thresholds": "edd2f10cb404",
+  "mini_llm": "bd4be8e4d883",
+  "challenger": "0f1ecab8f5dd"
+ },
+ "trained_on": "24000 synthetic transactions (seed 21)"
+}

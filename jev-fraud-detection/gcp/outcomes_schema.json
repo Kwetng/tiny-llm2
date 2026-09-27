@@ -1,0 +1,27 @@
+[
+ {
+  "name": "decision_id",
+  "type": "STRING",
+  "mode": "REQUIRED",
+  "description": "Links to fraud.decisions"
+ },
+ {
+  "name": "analyst_decision",
+  "type": "STRING",
+  "mode": "REQUIRED",
+  "description": "FRAUD or GENUINE"
+ },
+ {
+  "name": "reviewed_by",
+  "type": "STRING"
+ },
+ {
+  "name": "reviewed_at",
+  "type": "TIMESTAMP",
+  "mode": "REQUIRED"
+ },
+ {
+  "name": "notes",
+  "type": "STRING"
+ }
+]

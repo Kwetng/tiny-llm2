@@ -1,0 +1,170 @@
+[
+ {
+  "name": "genuine_large_new_payee",
+  "transaction": {
+   "customer_id": 281,
+   "amount": 846.55,
+   "channel": "faster_payment",
+   "description": "HOUSE DEPOSIT",
+   "hour": 0.9445517979582299,
+   "abroad": false,
+   "median": 25.9944811763326,
+   "new_payee": true,
+   "payee_age": 630.0,
+   "new_device": true,
+   "password_reset": false,
+   "mins_since_login": 1.6584753135218153,
+   "txns_last_hour": 3,
+   "unusual_hour": true,
+   "on_mule_list": false
+  },
+  "expected": {
+   "action": "HOLD",
+   "risk": 0.4808890271863646,
+   "p_jev": 0.6465914395450941,
+   "p_challenger": 0.31518661482763516,
+   "surprise_bits": 0.6453098058700562,
+   "overrides": []
+  }
+ },
+ {
+  "name": "app_scam",
+  "transaction": {
+   "customer_id": 1407,
+   "amount": 248.87,
+   "channel": "faster_payment",
+   "description": "HOLIDAY VILLA BOOKING",
+   "hour": 14.747353737268465,
+   "abroad": false,
+   "median": 14.240587418270971,
+   "new_payee": true,
+   "payee_age": 17.0,
+   "new_device": false,
+   "password_reset": false,
+   "mins_since_login": 42.73486787625016,
+   "txns_last_hour": 0,
+   "unusual_hour": false,
+   "on_mule_list": false
+  },
+  "expected": {
+   "action": "STEP-UP",
+   "risk": 0.24276386846200165,
+   "p_jev": 0.15775957989529948,
+   "p_challenger": 0.3277681570287038,
+   "surprise_bits": 0.4421924650669098,
+   "overrides": []
+  }
+ },
+ {
+  "name": "app_scam_scam_wording",
+  "transaction": {
+   "customer_id": 96,
+   "amount": 842.28,
+   "channel": "faster_payment",
+   "description": "SAFE ACCOUNT TRANSFER",
+   "hour": 11.918911580493806,
+   "abroad": false,
+   "median": 17.217560732625074,
+   "new_payee": true,
+   "payee_age": 46.0,
+   "new_device": false,
+   "password_reset": false,
+   "mins_since_login": 4.529304886235556,
+   "txns_last_hour": 0,
+   "unusual_hour": false,
+   "on_mule_list": false
+  },
+  "expected": {
+   "action": "BLOCK",
+   "risk": 0.8147350673314047,
+   "p_jev": 0.6394842892408928,
+   "p_challenger": 0.9899858454219166,
+   "surprise_bits": 6.179415702819824,
+   "overrides": []
+  }
+ },
+ {
+  "name": "account_takeover",
+  "transaction": {
+   "customer_id": 277,
+   "amount": 750.28,
+   "channel": "faster_payment",
+   "description": "DRINKS LATE",
+   "hour": 22.50945433983756,
+   "abroad": true,
+   "median": 37.03394578106173,
+   "new_payee": true,
+   "payee_age": 32.0,
+   "new_device": true,
+   "password_reset": true,
+   "mins_since_login": 4.811313203569383,
+   "txns_last_hour": 2,
+   "unusual_hour": false,
+   "on_mule_list": false
+  },
+  "expected": {
+   "action": "BLOCK",
+   "risk": 0.9353963956912563,
+   "p_jev": 0.877293708507702,
+   "p_challenger": 0.9934990828748105,
+   "surprise_bits": 1.6496670246124268,
+   "overrides": []
+  }
+ },
+ {
+  "name": "card_fraud",
+  "transaction": {
+   "customer_id": 1353,
+   "amount": 64.4,
+   "channel": "card_online",
+   "description": "ONE4ALL GIFT CARD",
+   "hour": 21.41607928766097,
+   "abroad": false,
+   "median": 40.72097532833503,
+   "new_payee": true,
+   "payee_age": null,
+   "new_device": true,
+   "password_reset": false,
+   "mins_since_login": null,
+   "txns_last_hour": 7,
+   "unusual_hour": true,
+   "on_mule_list": false
+  },
+  "expected": {
+   "action": "BLOCK",
+   "risk": 0.7931825120550926,
+   "p_jev": 0.6919681665938687,
+   "p_challenger": 0.8943968575163166,
+   "surprise_bits": 0.33566999435424805,
+   "overrides": []
+  }
+ },
+ {
+  "name": "missed_fraud",
+  "transaction": {
+   "customer_id": 1021,
+   "amount": 1359.03,
+   "channel": "faster_payment",
+   "description": "CAR PURCHASE DEALER",
+   "hour": 12.884444010777337,
+   "abroad": false,
+   "median": 45.9539078580646,
+   "new_payee": true,
+   "payee_age": 1257.0,
+   "new_device": false,
+   "password_reset": false,
+   "mins_since_login": 14.76356205346623,
+   "txns_last_hour": 1,
+   "unusual_hour": false,
+   "on_mule_list": false
+  },
+  "expected": {
+   "action": "ALLOW",
+   "risk": 0.07417845856505156,
+   "p_jev": 0.12196051072874511,
+   "p_challenger": 0.026396406401358,
+   "surprise_bits": 0.47596225142478943,
+   "overrides": []
+  }
+ }
+]

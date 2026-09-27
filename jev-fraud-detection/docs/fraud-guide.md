@@ -1,6 +1,6 @@
 \title Jev + Mini LLM Fraud Detection
-\subtitle A plain-English guide to how the system spots fraudulent transactions and decides what to do
-\subtitle With simple examples · September 2026
+\subtitle A step-by-step guide in plain English: how it works, how it decides, and how to run it on Google Cloud
+\subtitle github.com/Kwetng/tiny-llm2 · September 2026
 
 \pagebreak
 
@@ -8,368 +8,802 @@
 
 \pagebreak
 
-# 1. The idea in one minute
+# How to use this guide
 
-A spam filter looks at an email and answers one question: **"Is this spam?"** It gives a number, such as *97% likely spam*, and the email is filed accordingly.
+The guide has six parts. You can stop after any of them.
 
-This system does the same for every card payment and bank transfer: **"Is this transaction fraud or a scam?"** It has about a tenth of a second to answer, because the customer is waiting at a till or in their banking app.
-
-Two AI models work together:
-
-- **Jev** is a new kind of AI from TypeSafe AI, released in September 2026. It reads the transaction and returns a calibrated probability of fraud and the most likely type of fraud. It does not write text. It is built to give fast, reliable numbers.
-- **The mini LLM** is the small language model built from scratch in this repository. It has read tens of thousands of *normal* payment descriptions ("TESCO STORES 2291 LONDON", "RENT OCT", "J SMITH"). It notices when a new description looks nothing like normal banking text, such as "SAFE ACCOUNT TRANSFER".
-
-Around them sit a **second-opinion model**, the bank's **hard rules**, and a **decision engine** that picks one of four actions:
-
-| Action | What happens | Everyday comparison |
+| Part | What you will learn | Who it is for |
 |---|---|---|
-| **ALLOW** | The payment goes through | The shop assistant waves you through |
-| **STEP-UP** | The customer must confirm in their app; push payments to new payees also show a scam warning | "Can I see some ID?" |
-| **HOLD** | The payment is paused and a fraud analyst calls the customer | "Please wait while I call the manager" |
-| **BLOCK** | The payment is stopped and the card or session is frozen | The card is declined |
+| **A. The basics** | What the system does and who does what | Everyone |
+| **B. Follow one payment** | Every step of one real decision, with every number | Everyone |
+| **C. How well it works** | The test results, in plain words | Everyone |
+| **D. Run it on your computer** | Install it, run it, start the web service | Anyone who can open a terminal |
+| **E. Run it on Google Cloud** | Set up Google Cloud, put the service online, send it payments, keep an audit log, monitor it, retrain it | Anyone with a Google Cloud account |
+| **F. Keeping it safe** | What can go wrong and what the rules say | Managers, risk and compliance |
 
-> **In one sentence:** Jev and the mini LLM each notice different warning signs; a second model checks them; fixed rules catch the obvious cases; and the decision engine chooses the lightest action that keeps the customer safe.
+**Words in bold** are explained where they first appear. A full glossary is at the end.
 
-# 2. The kinds of fraud it looks for
-
-| Type | What happens | Typical warning signs | Simple example |
-|---|---|---|---|
-| **Card fraud (card not present)** | Stolen card details are used online | Many payments in a short time, a new device, a merchant abroad, odd hours | Seven gift-card purchases in an hour from a new laptop |
-| **Account takeover** | A criminal gets into the customer's online banking | New device, password just reset, a payment minutes after logging in, a new payee whose account was opened recently | A password reset at 22:00, then £750 to a new payee 5 minutes after login |
-| **Authorised push payment (APP) scam** | The real customer is tricked into sending money | The customer's own phone, a large payment to a new payee, a recently opened receiving account, and often tell-tale wording | "Your bank's security team" persuades someone to pay £842 with the reference "SAFE ACCOUNT TRANSFER" |
-
-**APP scams are the hardest.** The customer really is making the payment, on their own phone, at a normal time, so most behavioural alarms stay quiet. This is where reading the payment description helps most.
-
-**Why UK banks care so much:** since 7 October 2024, UK payment firms must reimburse APP scam victims up to £85,000 per claim, with the cost shared between the sending and receiving banks. Every scam stopped is money the bank would otherwise refund.
-
-# 3. How it works, step by step
-
-![Figure 1 — How a transaction flows through the system](../diagrams/fraud_flow.png)
-
-## Step 1 — The transaction arrives with its context
-
-A transaction on its own says little: £750 could be rent or a robbery. So each transaction is compared with **the customer's own normal behaviour**:
-
-| Signal | What it means | Example |
-|---|---|---|
-| Amount vs the customer's median | How big this is for *this* customer | £750 for someone whose usual payment is £37 → **20x** |
-| New payee or merchant | First time paying this recipient | First payment to "D NOWAK" |
-| Payee account age | How long ago the receiving account was opened | Opened **32 days ago** (a typical sign of a money-mule account) |
-| New device | First time this phone or computer has been used | A new laptop |
-| Password reset | Password changed in the last 24 hours | Reset yesterday evening |
-| Minutes since login | How quickly the payment followed the login | **5 minutes** |
-| Transactions in the last hour | Payment speed | **7** card payments in an hour |
-| Abroad, unusual hour | Location and time compared with this customer's habits | 03:00, merchant in Hong Kong |
-| Description | The merchant name or the payment reference the customer typed | "SAFE ACCOUNT TRANSFER" |
-
-## Step 2 — Jev asks two questions in one call
-
-Jev can answer different kinds of question. This system uses two:
-
-| Question | Type | Everyday version | Answer returned |
-|---|---|---|---|
-| `is_fraud` | **Noul** (yes/no) | "Is this email spam?" | A probability, e.g. **0.877** = 87.7% likely fraud |
-| `fraud_type` | **Choice** | "Is this ticket about billing, hardware or software?" | One label, e.g. **account takeover** |
-
-Each question comes with written instructions and a definition of what counts as "yes" and "no". **Jev needs no training data.** It judges from the instructions, which helps with brand-new fraud patterns that no model has seen before.
-
-## Step 3 — The mini LLM measures how "surprising" the description is
-
-This is the mini LLM's only job. It is trained on normal payment descriptions and learns to predict the next letter. When it reads a new description, we measure **how hard it was to predict**, in *bits per character*:
-
-- **Familiar text is easy to predict:** low surprise, around 0.3–1 bit per character.
-- **Text it has never seen anything like is hard to predict:** high surprise, 4–6 bits per character or more.
-
-**Real examples from the test run:**
-
-| Description | Surprise (bits/char) | Reading |
-|---|---|---|
-| ONE4ALL GIFT CARD | 0.34 | Very familiar — people buy gift cards all the time |
-| CAR PURCHASE DEALER | 0.48 | Familiar |
-| HOUSE DEPOSIT | 0.65 | Familiar |
-| DRINKS LATE | 1.65 | A bit unusual (customers' own free text) |
-| **SAFE ACCOUNT TRANSFER** | **6.18** | **Rarer than every normal description it has seen** |
-
-**Average surprise by type:** genuine 1.0, account takeover 2.0, card fraud 2.4, **APP scams 4.1** bits per character.
-
-**Why not ask the LLM to write something, or to judge the payment itself?** A tiny LLM makes things up (see the credit-model guide, where it invented a refinancing problem). A surprise score can't invent anything: it is just a measurement. All customer messages and reason codes are fixed templates.
-
-**Speed:** scoring one description takes about **1 millisecond** on an ordinary laptop processor, fast enough for real-time payments.
-
-## Step 4 — A second opinion from the challenger model
-
-The challenger is a **gradient-boosted tree model**. It learns from thousands of past transactions whose outcome is known (fraud or genuine). Its inputs are the behavioural signals from Step 1 **plus the mini LLM's surprise score**.
-
-Why have it?
-
-1. **Independence.** Two different methods that agree give more confidence, and disagreement is a warning.
-2. **It uses the bank's own history,** while Jev works from instructions alone.
-3. **It shows what the mini LLM adds.** The same model is trained with and without the surprise score (see section 5).
-
-## Step 5 — The decision engine chooses an action
-
-![Figure 2 — From combined risk to an action](../diagrams/fraud_actions.png)
-
-**1. Combine the two opinions.** Combined risk = the average of Jev's probability and the challenger's probability.
-
-Example: Jev 87.7%, challenger 99.3% → combined **93.5%**.
-
-**2. Place it in a band.** The cut-offs are set so each action fits what the bank can handle:
-
-| Action | Combined risk | Sized so that it affects about |
-|---|---|---|
-| ALLOW | below 8% | the other 96% of transactions |
-| STEP-UP | 8% to 32% | 2.8% of transactions |
-| HOLD | 32% to 74% | 0.8% of transactions — about what the analyst team can phone |
-| BLOCK | 74% and above | 0.4% of transactions |
-
-**3. Apply the overrides.** They can only make an action *stricter*, never softer:
-
-| Override | Minimum action | Why |
-|---|---|---|
-| Payee is on the shared list of known mule accounts | BLOCK | Other banks have already reported this account |
-| 10 or more card payments in the last hour | BLOCK | Classic "card testing" by criminals |
-| Large payment (5x usual or more) to a new payee with a description in the top 0.5% for surprise | STEP-UP | The mini LLM's early warning for scams |
-| Either model is at least 90% sure it's fraud | HOLD | One confident expert is enough to ask a human |
-
-## Step 6 — Tell the customer and the analyst, and log everything
-
-**For a STEP-UP**, the customer sees a fixed message. For a push payment to a new payee it is a scam warning:
-
-> *"Stop - this could be a scam. Your bank, HMRC and the police will never ask you to move money to a 'safe account' or pay a fee to release funds. If someone is telling you what to do, hang up and call us on the number on your card."*
-
-**For a HOLD or BLOCK**, the analyst gets a **case file** with all the scores and plain **reason codes**, such as "Password reset in the last 24 hours" or "Payee account opened 32 days ago".
-
-**For every decision**, an **audit-log** line records:
-- what the models saw (a fingerprint of the input)
-- the version of every model
-- Jev's answers and the challenger's score
-- the LLM surprise score
-- any overrides and the reason codes
-- an empty field for the analyst's final decision
-
-Confirmed outcomes then become training labels for the next version of the challenger.
+> **Important:** all the data is invented ("synthetic"). The code is for learning, not for a real bank. The results marked "Jev" come from a stand-in that imitates Jev's answers, because the real Jev service was not reachable when this was built (section C4).
 
 \pagebreak
 
-# 4. Six worked examples
+# Part A. The basics
 
-These are real outputs from the test run. The "truth" is known only because the data is synthetic; the system never sees it.
+## A1. The problem in one minute
 
-## Example A — Account takeover: BLOCK
+Every time someone pays by card or sends money from their banking app, the bank has a fraction of a second to decide: **is this payment safe?**
 
-| Item | Detail |
-|---|---|
-| **Transaction** | £750.28 Faster Payment, description "DRINKS LATE", 22:30 |
-| **Warning signs** | New device; password reset in the last 24 hours; payment 5 minutes after login; 20x the customer's usual amount (£37); first payment to this payee; payee account opened 32 days ago; payee abroad |
-| **Jev** | 87.7% fraud, type: account takeover |
-| **Challenger** | 99.3% |
-| **Mini LLM** | 1.65 bits/char — a bit unusual, not alarming |
-| **Combined risk** | 93.5% → above 74% → **BLOCK** |
+Think of airport security. Most passengers walk straight through. A few are asked a question. A very few have their bag opened. Almost nobody is stopped. Good security catches the dangerous few **without** annoying everyone else.
 
-**Why:** almost every account-takeover signal fired at once. The description itself looked ordinary; the behaviour gave it away.
+This system does the same for payments. It looks at each payment, gives it a **risk score** (a number from 0% to 100%), and picks the lightest action that keeps the customer safe.
 
-## Example B — Card fraud: BLOCK
+## A2. The four possible answers
 
-| Item | Detail |
-|---|---|
-| **Transaction** | £64.40 online card payment to "ONE4ALL GIFT CARD", 21:24 |
-| **Warning signs** | New device; first purchase at this merchant; 7 transactions in the last hour; unusual time for this customer |
-| **Jev** | 69.2% fraud, type: card fraud |
-| **Challenger** | 89.4% |
-| **Mini LLM** | 0.34 bits/char — completely normal (people buy gift cards all the time) |
-| **Combined risk** | 79.3% → **BLOCK** |
+| Answer | What happens | Airport comparison | How often (in the test) |
+|---|---|---|---|
+| **ALLOW** | The payment goes through | Walk straight through | About 96 in 100 payments |
+| **STEP-UP** | The customer taps "confirm" in their app. Transfers to a new person also show a scam warning | "Where are you flying today?" | About 3 in 100 |
+| **HOLD** | The payment waits while a fraud analyst phones the customer | "Please step aside, we need to check your bag" | Under 1 in 100 |
+| **BLOCK** | The payment is stopped and the card or login is frozen | "You cannot board" | About 1 in 250 |
 
-**Why:** the description was innocent, but the *pattern* — a burst of payments from a new device — is classic card fraud. This shows why the mini LLM is only one signal among many.
+## A3. The three kinds of fraud it looks for
 
-## Example C — APP scam with tell-tale wording: BLOCK
+| Kind | What happens | Typical warning signs |
+|---|---|---|
+| **Card fraud** | A criminal uses stolen card details online | Many small payments in a short time, a new computer, a shop abroad, a strange hour |
+| **Account takeover** | A criminal gets into the customer's online banking | New phone, password just reset, money sent minutes after logging in, to a brand-new payee |
+| **APP scam** (authorised push payment) | The real customer is tricked into sending money, for example by someone pretending to be the bank | The customer's own phone at a normal time, but a large payment to a new, recently opened account, often with tell-tale words such as "SAFE ACCOUNT" |
 
-| Item | Detail |
-|---|---|
-| **Transaction** | £842.28 Faster Payment, "SAFE ACCOUNT TRANSFER", 11:55 |
-| **Warning signs** | 49x the customer's usual amount (£17); first payment to this payee; payee account opened 46 days ago; payment 5 minutes after login; **description rarer than every normal description the mini LLM has seen** |
-| **Jev** | 63.9% fraud, type: APP scam |
-| **Challenger (with LLM surprise)** | 99.0% |
-| **Mini LLM** | **6.18 bits/char** |
-| **Combined risk** | 81.5% → **BLOCK** |
+**APP scams are the hardest to catch.** The real customer is making the payment, so most alarms stay quiet. Since October 2024, UK banks must refund APP scam victims up to £85,000 per claim. Every scam stopped is money the bank would otherwise pay back.
 
-**Why:** the customer's own phone and a normal time of day would usually look safe. The strongest unusual signal is the mini LLM's surprise score of 6.18, and the challenger, which uses it, is 99% sure. Real banks never ask customers to move money to a "safe account".
+## A4. The team: five parts, each with one job
 
-## Example D — APP scam with innocent wording: STEP-UP with a scam warning
+![Figure 1 — How a payment flows through the system](../diagrams/fraud_flow.png)
 
-| Item | Detail |
-|---|---|
-| **Transaction** | £248.87 Faster Payment, "HOLIDAY VILLA BOOKING", 14:44 |
-| **Warning signs** | 17x the customer's usual amount (£14); first payment to this payee; payee account opened 17 days ago |
-| **Jev** | 15.8% fraud, type: genuine |
-| **Challenger** | 32.8% |
-| **Mini LLM** | 0.44 bits/char — normal wording |
-| **Combined risk** | 24.3% → between 8% and 32% → **STEP-UP** |
-| **Customer sees** | The scam warning above |
+| Part | Its one job | Everyday comparison |
+|---|---|---|
+| **Jev** | Reads the payment and answers two questions: "How likely is this fraud?" and "Which kind?" | An experienced officer who judges at a glance, without needing past cases |
+| **Mini LLM** | Reads only the payment's description ("TESCO STORES", "RENT OCT") and measures how *unusual* the words are | A clerk who has read thousands of normal payment references and notices one that sounds wrong |
+| **Challenger** | A second model, trained on thousands of past payments whose outcome is known, gives its own risk score | A second officer who learned from the bank's own case files |
+| **Rules** | Fixed rules, such as "always block payments to a known criminal account" | The rulebook nobody can override |
+| **Decision engine** | Combines everything into ALLOW, STEP-UP, HOLD or BLOCK, then writes down why | The supervisor who makes the call and fills in the log |
 
-**Why:** a fake holiday-villa advert. The wording is innocent, so only the behaviour (a large payment to a brand-new account) raised concern. That wasn't enough to hold the payment, but the customer is warned before sending. Warnings stop only some scams (the model assumes about 35%), because victims are often being coached by the scammer.
+**What is an LLM?** A **large language model** is software that has learned patterns in text by predicting the next letter or word, over and over. ChatGPT and Claude are large ones. The **mini LLM** here is tiny (built from scratch in this project) and it **never writes anything**. It only measures how surprising a piece of text is. That means it can't make anything up.
 
-## Example E — A genuine house deposit: HOLD (a false alarm)
-
-| Item | Detail |
-|---|---|
-| **Transaction** | £846.55 Faster Payment, "HOUSE DEPOSIT", at 00:56 |
-| **Warning signs** | New device; payment 2 minutes after login; 33x the customer's usual amount (£26); first payment to this payee; unusual hour |
-| **Jev** | 64.7% fraud, type: account takeover |
-| **Challenger** | 31.5% |
-| **Mini LLM** | 0.65 bits/char — normal |
-| **Combined risk** | 48.1% → **HOLD** |
-
-**What happens next:** an analyst calls the customer, who confirms they paid a deposit late at night from a new phone. The payment is released and the outcome is logged as "genuine", which improves the next model.
-
-**Why it's a sensible mistake:** a big payment from a new device minutes after login at 1 a.m. looks exactly like account takeover. A short phone call is a small price for protection. The two models disagreed (65% vs 32%), and the combined 48% led to a phone call rather than a block.
-
-## Example F — A fraud that got through: ALLOW
-
-| Item | Detail |
-|---|---|
-| **Transaction** | £1,359.03 Faster Payment, "CAR PURCHASE DEALER", 12:53 |
-| **Warning signs** | 30x the customer's usual amount; first payment to this payee |
-| **Jev** | 12.2%; **challenger** 2.6%; **mini LLM** 0.48 bits/char |
-| **Combined risk** | 7.4% → just below 8% → **ALLOW** |
-| **Truth** | A purchase scam: a fake car advert |
-
-**Why it was missed:** everything looked like a genuine car purchase. The payee's account was old, there was no new device, the time was normal and the wording was normal. No fraud system catches everything. The honest answer to "what does your model miss?" is *well-disguised purchase scams*, which is why banks also rely on customer education, confirmation-of-payee checks, and sharing data with other banks.
+**What is Jev?** A new kind of AI model from TypeSafe AI, released in September 2026. Instead of writing text, it returns numbers: a probability ("73% likely fraud") or a choice from a list ("account takeover"). It needs no training data: you describe the question in plain words.
 
 \pagebreak
 
-# 5. How good is it?
+# Part B. Follow one payment, step by step
 
-The system was tested on 9,600 transactions it had never seen, containing 144 frauds worth £92,391.
+This is a real decision from the test run. The customer is being tricked by someone pretending to be the bank's security team.
 
-## Three ways to measure
+## Step 1. The payment arrives
 
-- **PR-AUC (precision–recall).** How well a score ranks the frauds above the genuine payments, focusing on the rare fraud cases. 1.0 is perfect; a random guess scores about 0.015 here, because only 1.5% of transactions are fraud.
-- **Recall at 2% alerts.** If the team can only look at the riskiest 2% of transactions, what share of all fraud is among them?
-- **Total cost.** Money lost to fraud that got through, plus the cost of bothering genuine customers.
+The payment system sends the payment **and** what the bank already knows about this customer. In a real bank a **feature store** (a fast database of customer facts) supplies the second half.
 
-## Ranking power
-
-![Figure 3 — How well each score ranks fraud](../diagrams/chart_prauc.png)
-
-| Score | PR-AUC | Recall at 2% alerts |
+| What is sent | Value | Plain meaning |
 |---|---|---|
-| Offline stand-in for Jev (no labels used) | 0.61 | 62.5% |
-| Challenger, behaviour only | 0.84 | 84.0% |
-| **Challenger + mini LLM surprise** | **0.96** | **94.4%** |
-| Ensemble (Jev stand-in + challenger) | 0.95 | 93.8% |
-| Mini LLM surprise on its own | 0.36 | 36.8% |
+| Amount | £842.28 | |
+| Channel | faster_payment | A bank transfer from the app |
+| Description | SAFE ACCOUNT TRANSFER | The reference the customer typed |
+| Time | 11:55 | |
+| Customer's usual payment | £17.22 | Their median (middle) payment |
+| New payee? | Yes | First time paying this account |
+| Payee account age | 46 days | The receiving account is new |
+| New device? | No | Their normal phone |
+| Password reset in the last day? | No | |
+| Minutes since login | 4.5 | |
+| Payments in the last hour | 0 | |
+| On the shared list of criminal ("mule") accounts? | No | |
 
-**The key finding:** on its own, the mini LLM is a weak detector (0.36), because most fraud uses ordinary-looking descriptions. But as *one extra signal* it gives the biggest single improvement, lifting the challenger from 0.84 to 0.96. Different models noticing different things is the whole point of combining them.
+## Step 2. Compare with the customer's normal behaviour
 
-## Business outcome
+£842 means nothing on its own. It could be rent. So the system compares it with **this** customer:
 
-![Figure 4 — Total cost of each design](../diagrams/chart_cost.png)
+- £842.28 ÷ £17.22 = **49 times** their usual payment.
+- First payment to this person, whose account is only 46 days old. Criminals often use new accounts to receive stolen money.
+- Sent 4.5 minutes after logging in.
 
-| Design | Fraud lost | Customer friction | Total cost |
-|---|---|---|---|
-| No controls | £92,391 | £0 | £92,391 |
-| Rules only | £29,232 | £1,100 | £30,332 |
-| Jev only | £13,836 | £474 | £14,311 |
-| Challenger + mini LLM | £10,078 | £190 | £10,269 |
-| **Full design** | **£7,884** | **£177** | **£8,061** |
+## Step 3. The mini LLM reads the description
 
-**What the full design did with the test transactions:**
+The mini LLM has read 40,000 normal payment descriptions. It tries to predict each letter of the new description. The harder that is, the more unusual the text. The result is measured in **bits per character**: roughly, how many yes/no guesses it needs per letter.
 
-| | ALLOW | STEP-UP | HOLD | BLOCK |
-|---|---|---|---|---|
-| Genuine (9,456) | 9,196 | 254 | 5 | 1 |
-| Fraud (144) | 5 | 12 | 70 | 57 |
-
-Reading the table:
-- **97% of genuine customers noticed nothing.** Of the 260 who were interrupted, 254 just tapped "confirm" in their app.
-- **70 of the 75 HOLDs were real fraud,** so the analysts' phone calls were well spent.
-- **Only 5 of 144 frauds were allowed straight through.** Some STEP-UPs will still succeed, because a victim being coached may confirm anyway.
-- **Share of fraud cases stopped** (allowing for STEP-UPs and HOLDs that fail): 88% of card fraud, 99% of account takeovers and 82% of APP scams.
-
-**The assumptions behind the £ figures** (replace with your own data):
-
-| Action | Chance of stopping the fraud | Cost of bothering a genuine customer |
+| Description | Surprise | Meaning |
 |---|---|---|
-| STEP-UP | 85% card fraud, 80% account takeover, 35% APP scam | £0.50 |
-| HOLD | 95% card fraud and takeover, 75% APP scam | £6 |
-| BLOCK | 100% | £20 |
+| ONE4ALL GIFT CARD | 0.34 bits | Very familiar |
+| HOUSE DEPOSIT | 0.65 bits | Familiar |
+| DRINKS LATE | 1.65 bits | A bit unusual |
+| **SAFE ACCOUNT TRANSFER** | **6.18 bits** | **More unusual than every normal description it has seen** |
 
-## Are the probabilities honest? (calibration)
+It takes about **1 millisecond**. On its own this proves nothing, but it's a strong clue.
 
-| Stand-in's predicted fraud probability | Transactions | Average prediction | Actually fraud |
+## Step 4. Jev answers two questions
+
+Jev receives the payment and the customer facts as structured data (**JSON**, a standard text format for data) and answers:
+
+| Question | Type | Answer |
+|---|---|---|
+| "Is this fraud or a scam?" | Yes/no, returned as a probability | **63.9%** |
+| "Which kind?" | Pick one from a list | **Authorised push payment scam** |
+
+## Step 5. The challenger gives a second opinion
+
+The challenger is a **gradient-boosted tree model**: hundreds of small decision trees, each asking yes/no questions such as "Is the amount more than 5 times usual?". It learned from 14,400 past payments whose outcome was known. It also uses the mini LLM's surprise score.
+
+Its answer: **99.0%** likely fraud.
+
+## Step 6. Combine the two opinions
+
+Combined risk = the average of the two = (63.9% + 99.0%) ÷ 2 = **81.5%**.
+
+Then the risk is placed in a band:
+
+| Combined risk | Action | Why these numbers |
+|---|---|---|
+| Below 8.1% | ALLOW | |
+| 8.1% to 32.5% | STEP-UP | Set so about 3 in 100 payments get a confirm tap |
+| 32.5% to 73.5% | HOLD | Set so the analyst team can phone everyone held |
+| **73.5% and above** | **BLOCK** | Set so about 1 in 250 payments is blocked |
+
+81.5% is above 73.5%, so the action is **BLOCK**.
+
+The bands come from **capacity** (how many calls the analysts can make, how many taps customers will tolerate), not from a fixed 50% line.
+
+## Step 7. Check the rules
+
+The rules can only make an action **stricter**, never softer:
+
+| Rule | Minimum action | Did it apply here? |
+|---|---|---|
+| Payee is on the shared list of criminal accounts | BLOCK | No |
+| 10 or more card payments in the last hour ("card testing") | BLOCK | No (not a card payment) |
+| Big transfer (5× usual) to a new payee **and** the description is in the top 0.5% for surprise | at least STEP-UP | Yes, but the action is already stricter |
+| Either model is at least 90% sure | at least HOLD | Yes (challenger 99%), but already stricter |
+
+Final answer: **BLOCK**.
+
+## Step 8. Write down why
+
+The system never writes free text. The customer message and **reason codes** (short, fixed explanations) come from templates:
+
+- Payment 5 minutes after login
+- Amount is 49x the customer's median (£17)
+- First payment to this payee or merchant
+- Payee account opened 46 days ago
+- Description unlike normal payments (mini LLM surprise 6.2 bits/char)
+
+Every decision is also saved in an **audit log** with the version of every model and a fingerprint of the input, so anyone can later check exactly why it happened.
+
+## Step 9. The other five examples, in brief
+
+| Payment | Truth | Jev | Challenger | Combined | Action | Why |
+|---|---|---|---|---|---|---|
+| £750 "DRINKS LATE" at 22:30 | Account takeover | 87.7% | 99.3% | 93.5% | **BLOCK** | New device, password just reset, 5 minutes after login, 20× usual |
+| £64 "ONE4ALL GIFT CARD" | Card fraud | 69.2% | 89.4% | 79.3% | **BLOCK** | 7 payments in an hour from a new laptop. The words were normal |
+| £249 "HOLIDAY VILLA BOOKING" | APP scam | 15.8% | 32.8% | 24.3% | **STEP-UP** + scam warning | Only the behaviour looked odd. The customer is warned |
+| £847 "HOUSE DEPOSIT" at 00:56 | **Genuine** | 64.7% | 31.5% | 48.1% | **HOLD** | A false alarm: new phone, 1 a.m., 33× usual. One phone call sorts it out |
+| £1,359 "CAR PURCHASE DEALER" | APP scam | 12.2% | 2.6% | 7.4% | **ALLOW** | **Missed.** A fake car advert that looked exactly like a genuine purchase |
+
+No system catches everything. The honest answer to "what does it miss?" is: **well-disguised purchase scams**.
+
+\pagebreak
+
+# Part C. How well it works
+
+## C1. The test
+
+24,000 invented payments, about 1.5% of them fraud. The models learned from 14,400 and were tested on the other 9,600, which they had never seen. Those 9,600 included 144 frauds worth £92,391.
+
+## C2. Who spots fraud best?
+
+**PR-AUC** is a score from 0 to 1 for how well a model puts the frauds at the top of its list. Guessing at random would score about 0.015 here.
+
+| Model | PR-AUC | Share of fraud caught if analysts check the riskiest 2% |
+|---|---|---|
+| Stand-in for Jev (no training data) | 0.61 | 63% |
+| Challenger without the mini LLM | 0.84 | 84% |
+| **Challenger with the mini LLM** | **0.96** | **94%** |
+| Mini LLM on its own | 0.36 | 37% |
+
+**What this shows:** on its own, the mini LLM is weak, because most fraud uses ordinary words. As **one extra clue** it gives the biggest single improvement, from 0.84 to 0.96. It helps most with APP scams: their descriptions average 4.1 bits of surprise, against 1.0 for genuine payments.
+
+## C3. What it saves
+
+![Figure 2 — Total cost of each design: fraud lost plus the cost of bothering genuine customers](../diagrams/chart_cost.png)
+
+| Design | Fraud lost | Cost of bothering customers | Total |
 |---|---|---|---|
-| 0–5% | 7,566 | 3.1% | 0.1% |
-| 5–20% | 1,803 | 8.6% | 2.5% |
-| 20–50% | 194 | 29.9% | 30.9% |
-| 50–80% | 33 | 65.2% | 90.9% |
+| No checks at all | £92,391 | £0 | £92,391 |
+| Simple rules only | £29,232 | £1,100 | £30,332 |
+| **Full system** | **£7,884** | **£177** | **£8,061** |
 
-The stand-in is too cautious at the bottom (it says 3% where the truth is 0.1%) and too relaxed at the top. This is exactly why a zero-label model — Jev included — must be checked against real outcomes before its percentages are trusted. The combined design is less affected because the thresholds are set by capacity rather than by the raw percentages.
+- **97 in 100 genuine customers noticed nothing.** Of the 260 interrupted, 254 just tapped "confirm".
+- **70 of the 75 held payments were real fraud**, so the analysts' calls were well spent.
+- **Stopped:** 88% of card fraud, 99% of account takeovers, 82% of APP scams.
 
-# 6. Important: the real Jev versus the offline stand-in
+The £ figures depend on assumptions (for example, that a scam warning stops 35% of APP scams). Replace them with your bank's own figures.
 
-Jev runs as an online service at `api.typesafe.ai` and needs an API key. The environment that built this system could not reach it, so every "Jev" number in this guide comes from a **local stand-in**:
+## C4. The real Jev and the stand-in
 
-- **What it is:** a short, hand-written rule. It weighs the behavioural signals and looks for a few scam phrases, and it returns answers in exactly Jev's format.
-- **What it is not:** it is **not Jev**. A real language-understanding model would read the description far more flexibly than a keyword list, and could be better or worse overall.
-- **Why it exists:** so the whole pipeline can be run, tested and demonstrated anywhere.
+Jev runs as an online service and needs a paid key. It wasn't reachable when this was built, so every "Jev" number above comes from a **stand-in**: a short hand-written rule that answers in exactly Jev's format. **It is not Jev.** Add a key and re-run (Part D or E) to test the real model. Jev has published results for spam, not for bank fraud, so it must be tested on the bank's own data.
 
-**To use the real Jev:**
+\pagebreak
+
+# Part D. Run it on your own computer
+
+You need a computer with **Python 3.11** or newer and **Git**. Everything below is typed in a **terminal**: Terminal on a Mac, PowerShell on Windows. On Windows, write `set` instead of `export`.
+
+## D1. Download the project
+
+```
+git clone https://github.com/Kwetng/tiny-llm2.git
+cd tiny-llm2/jev-fraud-detection
+```
+
+## D2. Install the libraries
+
+```
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r gcp/service/requirements.txt pytest httpx
+```
+
+A **virtual environment** (`.venv`) keeps these libraries separate from the rest of your computer.
+
+## D3. Run the whole experiment
+
+```
+cd code
+python fraud_jev_llm.py --offline
+```
+
+This takes about 2 minutes. It creates the invented payments, trains the mini LLM and the challenger, tests everything, and writes the results to `code/fraud_outputs/`:
+
+| File | What is in it |
+|---|---|
+| `metrics.json` | All the results in section C |
+| `case_*.md` | The six worked examples |
+| `audit_log.jsonl` | One line per decision, as a bank would keep |
+| `model_card.md` | A one-page summary for model risk |
+
+To use the real Jev, set your key first: `export TYPESAFE_API_KEY=your-key`, then run without `--offline`.
+
+## D4. Save the trained models as a "bundle"
+
+The web service needs the trained models saved to files:
+
+```
+python fraud_jev_llm.py --offline --export-bundle ../gcp/model_bundle
+cd ..
+```
+
+The bundle is 1.7 MB:
+
+| File | What it is |
+|---|---|
+| `mini_llm.pt` | The mini LLM's learned weights |
+| `challenger.joblib` | The challenger model |
+| `baseline_surprise.npy` | What "normal" surprise looks like, for the top-0.5% rule |
+| `engine.json` | The bands, rules, questions for Jev and message templates |
+| `samples.json` | The six example payments and the decisions they should get |
+
+A bundle is already included in the repository, so this step is optional.
+
+## D5. Run the tests
+
+```
+pytest -q tests
+```
+
+You should see `14 passed`. The tests check, among other things, that the web service gives **exactly** the same decision as the experiment for all six examples.
+
+## D6. Start the web service on your computer
+
+```
+cd gcp/service
+export JEV_OFFLINE=true BUNDLE_DIR=../model_bundle PYTHONPATH=../../code
+uvicorn main:app --port 8080
+```
+
+(On Windows PowerShell: `$env:JEV_OFFLINE="true"; $env:BUNDLE_DIR="../model_bundle"; $env:PYTHONPATH="../../code"`.)
+
+Leave that window open. In a **second** terminal, from the `jev-fraud-detection` folder:
+
+```
+curl http://localhost:8080/healthz
+python gcp/send_test_transactions.py http://localhost:8080
+```
+
+You should see:
+
+```
+genuine_large_new_payee  HOUSE DEPOSIT          -> HOLD     risk 48.1% (expected HOLD)
+app_scam                 HOLIDAY VILLA BOOKING  -> STEP-UP  risk 24.3% (expected STEP-UP)
+app_scam_scam_wording    SAFE ACCOUNT TRANSFER  -> BLOCK    risk 81.5% (expected BLOCK)
+account_takeover         DRINKS LATE            -> BLOCK    risk 93.5% (expected BLOCK)
+card_fraud               ONE4ALL GIFT CARD      -> BLOCK    risk 79.3% (expected BLOCK)
+missed_fraud             CAR PURCHASE DEALER    -> ALLOW    risk 7.4% (expected ALLOW)
+```
+
+Each answer takes a few milliseconds. You can also open **http://localhost:8080/docs** in a browser: FastAPI shows every endpoint with a "Try it out" button.
+
+**The service has three addresses (endpoints):**
+
+| Endpoint | Used for |
+|---|---|
+| `GET /healthz` | "Are you alive?" Google Cloud checks this |
+| `POST /score` | Send one payment, get the decision back straight away |
+| `POST /pubsub` | Receive payments as messages from Google Pub/Sub (section E9) |
+
+\pagebreak
+
+# Part E. Run it on Google Cloud, step by step
+
+## E0. What Google Cloud does for us
+
+**Google Cloud Platform (GCP)** rents out computers, storage and ready-made services by the minute. You pay for what you use. For this project we use ten services:
+
+| Service | What it is | Everyday comparison | Used for |
+|---|---|---|---|
+| **Project** | A folder that holds everything and receives the bill | A company account | Keeping this demo separate |
+| **IAM and service accounts** | Who is allowed to do what. A **service account** is an identity for a program, not a person | Staff badges that open only certain doors | Each part gets only the access it needs |
+| **Cloud Build** | Builds our program into a **container** | A factory that packs the program and everything it needs into one box | Making the container image |
+| **Artifact Registry** | Stores containers | A warehouse for those boxes | Keeping each version |
+| **Cloud Run** | Runs a container as a web service; starts more copies when busy, stops them when idle | A taxi rank that adds cars when the queue grows | The fraud scorer and the retraining job |
+| **Secret Manager** | A safe for passwords and keys | A key cabinet with a log of who opened it | The Jev API key |
+| **Cloud Storage** | Stores files ("objects") in "buckets" | A shared drive | Model bundles |
+| **Pub/Sub** | Passes messages between systems | A post room | Payments sent as messages |
+| **BigQuery** | A database for very large tables, queried with SQL | A giant spreadsheet you can ask questions | The audit log and reports |
+| **Logging, Monitoring, Scheduler** | Collects logs, draws charts, sends alerts, runs jobs on a timetable | A CCTV room with an alarm and a wall calendar | Watching the service; weekly retraining |
+
+![Figure 3 — How the fraud scorer runs on Google Cloud](../diagrams/gcp_architecture.png)
+
+**Two ways in:**
+
+- **Real time:** the payment system calls the service over the internet (HTTPS) and waits a few milliseconds for the answer. Use this for approving payments.
+- **Messages:** other systems drop payments onto a **Pub/Sub topic**; Pub/Sub delivers each one to the service. Use this for screening in bulk, or when the sender shouldn't wait.
+
+**All the commands in this part are in one script,** `gcp/deploy.sh`, as numbered steps (`step1_project`, `step2_identities`, …). Each step below shows what the command does and what you should see.
+
+> **Please note:** the commands were written for this guide and checked for syntax, and the service they deploy passes its 14 tests. They have **not** been run against a live Google Cloud account from the environment that built this guide. Read each command before you run it, and use a new, empty project.
+
+## E1. Before you start
+
+1. **Create a Google account and a Google Cloud account** at console.cloud.google.com. New accounts usually get free credit.
+2. **Create a new project.** In the console: the project picker at the top, then *New project*. Write down the **project ID** (for example `my-fraud-demo-123`). It's different from the display name.
+3. **Link billing** to the project: *Billing* in the menu.
+4. **Set a budget alert** so nothing surprises you: *Billing*, then *Budgets & alerts*, then *Create budget*, for example £20 a month with an email at 50%, 90% and 100%.
+5. **Open Cloud Shell.** Click the terminal icon (**>_**) at the top right of the console. **Cloud Shell** is a free Linux terminal in your browser with `gcloud`, `bq`, `git` and Python already installed. It is the easiest way to follow this guide. To work on your own computer instead, install the Google Cloud CLI from cloud.google.com/sdk and run `gcloud auth login`.
+6. **Download the project in Cloud Shell:**
+
+```
+git clone https://github.com/Kwetng/tiny-llm2.git
+cd tiny-llm2/jev-fraud-detection
+export PROJECT_ID=my-fraud-demo-123      # your project ID
+export REGION=europe-west2               # London
+source gcp/deploy.sh
+```
+
+`source` loads the settings and the step functions without running anything yet.
+
+## E2. Point gcloud at your project and switch on the services
+
+```
+step1_project
+```
+
+This runs:
+
+```
+gcloud config set project $PROJECT_ID
+gcloud config set run/region $REGION
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
+  secretmanager.googleapis.com bigquery.googleapis.com pubsub.googleapis.com storage.googleapis.com \
+  cloudscheduler.googleapis.com logging.googleapis.com monitoring.googleapis.com
+```
+
+Google Cloud services are switched off in a new project. `services enable` switches on the ten we need. It can take a minute or two and ends with *Operation finished successfully*.
+
+**Why London (`europe-west2`)?** Customer data should stay in the UK or EU. Choosing the region once, and using it for everything, keeps it there.
+
+## E3. Create an identity for each part
+
+```
+step2_identities
+```
+
+This creates four **service accounts**:
+
+| Service account | Who uses it | What it may do (granted in later steps) |
+|---|---|---|
+| `fraud-scorer` | The scoring service | Read the Jev key, read model bundles, write to the audit table |
+| `pubsub-push` | Pub/Sub | Call the scoring service |
+| `fraud-retrain` | The weekly retraining job | Write new model bundles |
+| `scheduler` | Cloud Scheduler | Start the retraining job |
+
+This is the **principle of least privilege**: if one part is misused, it can't do anything else. A bank's auditors will ask for it.
+
+## E4. Put the Jev key in the safe
+
+If you have a Jev API key:
 
 ```
 export TYPESAFE_API_KEY=your-key
-cd jev-fraud-detection/code
-python fraud_jev_llm.py
+step3_jev_key
 ```
 
-The same tests, cost analysis and case files will then show how the real Jev performs. Jev's published benchmark is for spam detection; its performance on banking fraud must be proven on the bank's own data.
+This runs:
 
-# 7. What could go wrong, and how the design protects against it
+```
+printf '%s' "$TYPESAFE_API_KEY" | gcloud secrets create typesafe-api-key --data-file=- \
+  --replication-policy=user-managed --locations=$REGION
+gcloud secrets add-iam-policy-binding typesafe-api-key \
+  --member="serviceAccount:fraud-scorer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
 
-| Risk | Simple example | Protection |
+The key is stored encrypted, only in London, and only the scoring service may read it. It never appears in the code or the container.
+
+**No key?** Skip this step. The service will use the stand-in and say so on every decision (`"decision_model": "LOCAL STAND-IN (not Jev)"`).
+
+## E5. Create the storage: a bucket and two BigQuery tables
+
+```
+step4_storage
+```
+
+| Command | What it does |
+|---|---|
+| `gcloud storage buckets create gs://$BUCKET --location=$REGION --uniform-bucket-level-access` | Creates a bucket for model bundles. Uniform access means permissions are set for the whole bucket, which is simpler and safer |
+| `gcloud storage cp gcp/model_bundle/* gs://$BUCKET/bundles/initial/` | Uploads the first bundle |
+| `gcloud storage buckets add-iam-policy-binding ...` | Lets the scorer **read** bundles and the retraining job **write** them |
+| `bq --location=$REGION mk --dataset $PROJECT_ID:fraud` | Creates a BigQuery **dataset** (a folder of tables) called `fraud` |
+| `bq mk --table --time_partitioning_field=decided_at ... fraud.decisions gcp/bigquery_schema.json` | Creates the audit-log table, one row per decision. **Partitioned** by day, so queries on recent days are fast and cheap |
+| `bq mk --table ... fraud.outcomes gcp/outcomes_schema.json` | Creates a table for the analysts' verdicts (FRAUD or GENUINE) |
+| `bq add-iam-policy-binding ... fraud.decisions` | Lets the scorer add rows to the audit table, and to nothing else |
+
+**Why two tables?** Rows streamed into BigQuery can't be edited for a while afterwards. So analysts' verdicts go in their own table, and the two are joined by `decision_id` when needed.
+
+## E6. Build the container
+
+```
+step5_build
+```
+
+This runs:
+
+```
+gcloud artifacts repositories create fraud --repository-format=docker --location=$REGION
+gcloud builds submit --config gcp/cloudbuild.yaml --substitutions=_REGION=$REGION,_TAG=v1 .
+```
+
+1. The first command creates a private **repository** for container images in London.
+2. The second uploads the project folder to **Cloud Build**. Cloud Build follows the recipe in `gcp/Dockerfile`:
+   - start from a small Linux with Python 3.11
+   - install the libraries (the CPU-only version of PyTorch, to keep it small)
+   - copy in the three program files and the model bundle
+   - run as an ordinary user, not as administrator
+3. The finished **image** is stored as `europe-west2-docker.pkg.dev/PROJECT_ID/fraud/fraud-scorer:v1`.
+
+It takes about 5–10 minutes the first time and ends with *SUCCESS*. The file `.gcloudignore` stops unneeded folders (documents, diagrams) from being uploaded.
+
+## E7. Put the service online with Cloud Run
+
+```
+step6_deploy
+```
+
+The main command:
+
+```
+gcloud run deploy fraud-scorer --image=$IMAGE --region=$REGION \
+  --service-account=fraud-scorer@$PROJECT_ID.iam.gserviceaccount.com \
+  --no-allow-unauthenticated --cpu=2 --memory=2Gi --min-instances=0 --max-instances=5 \
+  --concurrency=20 --timeout=15 \
+  --set-env-vars=BQ_TABLE=$PROJECT_ID.fraud.decisions,TORCH_THREADS=2,BUNDLE_URI=gs://$BUCKET/bundles/initial \
+  --set-secrets=TYPESAFE_API_KEY=typesafe-api-key:latest
+```
+
+What each part means:
+
+| Setting | Meaning |
+|---|---|
+| `--service-account` | The service runs with the `fraud-scorer` badge from E3 |
+| `--no-allow-unauthenticated` | **Private:** only callers with permission can use it |
+| `--cpu=2 --memory=2Gi` | Size of each copy (2 processors, 2 GB of memory) |
+| `--min-instances=0` | No copies run when idle, so it costs nothing, but the first request after a pause is slow (a **cold start**, a few seconds) |
+| `--max-instances=5` | Never more than 5 copies, which caps the cost |
+| `--concurrency=20` | Each copy handles up to 20 payments at once |
+| `--timeout=15` | Give up after 15 seconds |
+| `BQ_TABLE` | Write every decision to the audit table |
+| `BUNDLE_URI` | Load the models from the bucket at start-up |
+| `--set-secrets` | Hand the Jev key to the program from Secret Manager |
+
+The script then gives **you** permission to call the service (`roles/run.invoker`) and prints its address, for example `https://fraud-scorer-abc123-nw.a.run.app`.
+
+## E8. Send it payments
+
+```
+step7_test
+```
+
+The script does three things.
+
+**1. Health check:**
+
+```
+curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" $SERVICE_URL/healthz
+```
+
+`gcloud auth print-identity-token` creates a short-lived **identity token** that proves who you are. Without it the service answers `403 Forbidden`, which is exactly what should happen.
+
+**2. Score one payment**, the "SAFE ACCOUNT TRANSFER" example from Part B:
+
+```
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "Content-Type: application/json" -d @gcp/sample_transaction.json $SERVICE_URL/score
+```
+
+The answer (shortened):
+
+```
+{
+ "action": "BLOCK",
+ "risk": 0.8147,
+ "p_jev": 0.6395,
+ "jev_fraud_type": "authorised push payment scam",
+ "p_challenger": 0.99,
+ "llm_surprise_bits": 6.179,
+ "reason_codes": ["Payment 5 minutes after login",
+                  "Amount is 49x the customer's median (£17)",
+                  "First payment to this payee or merchant",
+                  "Payee account opened 46 days ago",
+                  "Description unlike normal payments (mini LLM surprise 6.2 bits/char)"],
+ "decision_model": "LOCAL STAND-IN (not Jev) - set TYPESAFE_API_KEY to use the real model",
+ "decision_id": "64fac21c-...",
+ "latency_ms": 8.3
+}
+```
+
+**3. All six examples:** `python gcp/send_test_transactions.py $SERVICE_URL`. You should see the same six lines as in D6.
+
+**How the payment system would call it** (Python, with `pip install requests google-auth`):
+
+```
+import google.auth.transport.requests, google.oauth2.id_token, requests
+token = google.oauth2.id_token.fetch_id_token(google.auth.transport.requests.Request(), SERVICE_URL)
+r = requests.post(SERVICE_URL + "/score", json=payment, headers={"Authorization": "Bearer " + token}, timeout=2)
+action = r.json()["action"]          # ALLOW, STEP-UP, HOLD or BLOCK
+```
+
+The caller runs with its own service account, which needs the `roles/run.invoker` role on this service. Always set a short timeout, and decide in advance what happens if the scorer doesn't answer in time (usually STEP-UP rather than ALLOW).
+
+## E9. Receive payments as messages (Pub/Sub)
+
+```
+step8_pubsub
+```
+
+| Command | What it does |
+|---|---|
+| `gcloud pubsub topics create transactions` | Creates a **topic**: a named mailbox that systems publish payments to |
+| `gcloud run services add-iam-policy-binding fraud-scorer --member=serviceAccount:pubsub-push@... --role=roles/run.invoker` | Lets Pub/Sub call the service |
+| `gcloud pubsub subscriptions create transactions-to-scorer --topic=transactions --push-endpoint=$SERVICE_URL/pubsub --push-auth-service-account=pubsub-push@...` | Creates a **push subscription**: every message on the topic is posted to `/pubsub`, signed with the `pubsub-push` identity |
+| `gcloud pubsub topics publish transactions --message="$(cat gcp/sample_transaction.json)"` | Sends one test payment |
+
+**How it behaves:**
+
+- If the service answers with success, Pub/Sub marks the message as done.
+- If the service fails, Pub/Sub tries again later, so nothing is lost.
+- A message that can never work (for example, not valid JSON) is logged and accepted, so it doesn't loop forever.
+- In production, add a **dead-letter topic** to catch messages that keep failing.
+
+## E10. Read the audit log
+
+```
+step9_audit
+```
+
+**In BigQuery** (from Cloud Shell, or in the console under *BigQuery*, then the `fraud` dataset):
+
+```
+bq query --use_legacy_sql=false \
+ 'SELECT decided_at, transaction_id, action, ROUND(risk, 3) AS risk, reason_codes
+  FROM `my-fraud-demo-123.fraud.decisions` ORDER BY decided_at DESC LIMIT 10'
+```
+
+**In Cloud Logging:** every decision is also written as a structured log line.
+
+```
+gcloud logging read 'resource.type="cloud_run_revision" AND jsonPayload.message="fraud_decision"' --limit=5
+```
+
+In the console: *Logging*, then *Logs Explorer*, then filter on `jsonPayload.message="fraud_decision"`.
+
+**Recording an analyst's verdict** after a HOLD:
+
+```
+bq query --use_legacy_sql=false \
+ "INSERT INTO fraud.outcomes (decision_id, analyst_decision, reviewed_by, reviewed_at)
+  VALUES ('64fac21c-...', 'GENUINE', 'analyst.jones', CURRENT_TIMESTAMP())"
+```
+
+**A dashboard in 5 minutes:**
+
+1. Open lookerstudio.google.com and choose *Create*, then *Data source*, then *BigQuery*.
+2. Pick the `fraud.decisions` table.
+3. Add a time chart of decisions by `action`, and a table of the latest HOLDs.
+
+The file `gcp/monitoring.sql` has four ready-made health-check queries:
+
+1. Actions per day against the planned capacity
+2. The 95th-percentile response time
+3. The average mini LLM surprise, which rises when normal wording changes
+4. The share of HOLDs that turned out to be real fraud
+
+## E11. Watch it and get alerts
+
+```
+step10_monitoring
+```
+
+This creates a **log-based metric** called `fraud_blocks`: a counter that goes up every time the service decides BLOCK.
+
+Then create two alerts in the console: *Monitoring*, then *Alerting*, then *Create policy*.
+
+1. **Too slow:**
+   - Metric: *Cloud Run Revision → Request latencies*, filtered to service `fraud-scorer`.
+   - Condition: 95th percentile above 500 ms for 5 minutes.
+   - Notification: your email.
+2. **Unusual number of BLOCKs:**
+   - Metric: *Logs-based metric → user/fraud_blocks*.
+   - Condition: more than, say, three times the normal hourly count.
+   - A sudden jump means either an attack or a broken model. Both need a person.
+
+**What to check every week:**
+
+- **Actions:** the share of STEP-UP, HOLD and BLOCK stays close to plan.
+- **HOLD precision:** the share of HOLDs that are real fraud (query 4) doesn't fall.
+- **Wording drift:** the average mini LLM surprise doesn't creep up. If it does, retrain.
+
+## E12. Retrain every week, and let a person approve
+
+```
+step11_retraining
+```
+
+| What it creates | What it does |
+|---|---|
+| **Cloud Run job** `fraud-retrain` | Runs `retrain.py` from the same container: trains new models and saves a new bundle to `gs://BUCKET/bundles/YYYY-MM-DD-HHMM/`, together with its `metrics.json` |
+| **Cloud Scheduler** job `fraud-retrain-weekly` | Starts the job every Monday at 02:00, London time |
+
+To run it now: `gcloud run jobs execute fraud-retrain --region=$REGION --wait`.
+
+**The new model does not go live automatically.** Promotion works like this:
+
+1. **Review.** Download `metrics.json` for the new bundle and compare it with the current one: PR-AUC, HOLD precision, total cost.
+2. **Try it on a small share of traffic (canary):**
+
+```
+gcloud run services update fraud-scorer --region=$REGION \
+  --update-env-vars=BUNDLE_URI=gs://$BUCKET/bundles/2026-10-05-0200 --no-traffic --tag=candidate
+gcloud run services update-traffic fraud-scorer --region=$REGION --to-tags=candidate=10
+```
+
+   This sends 10% of payments to the new version while 90% stay on the old one.
+
+3. **Promote:** `gcloud run services update-traffic fraud-scorer --region=$REGION --to-latest`.
+4. **Roll back** at any time by sending 100% of traffic back to the previous revision (the console's *Revisions* tab lists them all).
+
+**In this demo** the job invents new data each time. With real data, `retrain.py` would read last week's decisions from `fraud.decisions` joined to the analysts' verdicts in `fraud.outcomes`.
+
+## E13. From demo to a real bank: the extra controls
+
+| Control | What to do on Google Cloud | Why |
 |---|---|---|
-| **Fraud that looks genuine** | The fake car dealer in Example F | Several independent signals; mule-account sharing between banks; confirmation of payee; customer education |
-| **Too many false alarms** | Genuine customers blocked at the till | Cut-offs sized to capacity; most interruptions are a one-tap confirmation; only 1 genuine BLOCK in 9,456 |
-| **Criminals change tactics** | New scam wording the LLM hasn't seen | New wording is *more* surprising, which helps; the challenger and mini LLM are retrained regularly on confirmed outcomes |
-| **Normal language changes** | A new popular merchant looks "surprising" | Retrain the mini LLM on recent normal descriptions; track the average surprise over time |
-| **A model's probabilities drift** | Jev's percentages stop matching reality | Weekly checks of calibration and HOLD precision; version recorded on every decision |
-| **The LLM invents text** | A made-up reason in a case file | The LLM never writes; messages and reason codes are templates |
-| **Data leaves the bank** | Transaction details sent to an external API | Data-protection review, contract terms, data minimisation and model-risk approval before real data is sent |
-| **Automated decisions affect people** | A genuine payment blocked with no recourse | HOLDs go to humans; customers can confirm or call; every decision is explainable from its reason codes |
-| **Unfair treatment** | One group of customers is challenged more often | Monitor STEP-UP and HOLD rates across customer segments |
+| **No public address** | `--ingress=internal-and-cloud-load-balancing`; callers reach it only from the bank's own network | Payments should never cross the open internet |
+| **Data boundary** | Put the project inside **VPC Service Controls** | Stops data being copied out, even by someone with valid access |
+| **Your own encryption keys** | **Cloud KMS** keys for the bucket, BigQuery and Cloud Run (`--key=...`) | The bank can revoke Google's access to the data |
+| **Fixed outgoing address for Jev** | Direct VPC egress plus **Cloud NAT** with a reserved IP address | TypeSafe can allow only the bank's address to use the key |
+| **Only approved regions** | Organisation policy `gcp.resourceLocations` = UK and EU | Nobody can create resources elsewhere by mistake |
+| **Only approved images** | **Binary Authorization** | Only images built by the bank's pipeline can run |
+| **Less data sent to Jev** | Send only the fields in `jev_state()`, never names or account numbers; **Sensitive Data Protection** can mask free text | Data minimisation under GDPR |
+| **Always warm** | `--min-instances=2` | No cold starts during payment hours |
+| **Full access logs** | Turn on **Data Access audit logs** for BigQuery, Storage and Secret Manager | Who read what, and when |
+| **Model risk** | Register the model, have it independently validated, keep this guide and the tests as evidence | PRA SS1/23 |
 
-**Regulatory notes:**
-- **EU AI Act:** the high-risk category for creditworthiness explicitly *excludes* AI systems used to detect financial fraud.
-- **UK model risk (PRA SS1/23):** a material fraud model still falls under model risk management — inventory, independent validation, monitoring and change control. So do data-protection rules.
-- **UK APP scams:** mandatory reimbursement, up to £85,000 per claim since October 2024, makes stopping APP scams a direct financial priority.
+## E14. What it costs, and how to delete everything
 
-# 8. How to explain it in 30 seconds
+**Costs** (check the pricing pages for your region):
 
-> "I treat fraud screening as a fast System One decision. Jev reads each transaction as structured data and returns a calibrated fraud probability and fraud type in one call, with no training labels. The mini LLM — which I built from scratch — never writes anything: it's trained only on normal payment descriptions and scores how surprising a new one is, in about a millisecond. On its own that's a weak detector, but as one extra signal it lifted our challenger's PR-AUC from 0.84 to 0.96, mostly by catching APP-scam wording like 'safe account transfer'. The decision engine sizes STEP-UP, HOLD and BLOCK to team capacity, and hard rules can only make actions stricter. Every decision is logged with model versions. And I'm honest about what it misses: well-disguised purchase scams."
+- With `--min-instances=0`, Cloud Run charges only while it is working. A few hundred test payments cost pennies.
+- Cloud Build, Artifact Registry, BigQuery and Cloud Storage are also very cheap at this size.
+- The biggest cost to watch is **keeping instances always on** (`--min-instances` above 0). Keep it at 0 while learning.
+- The budget alert from E1 is your safety net.
 
-# 9. Glossary
+**To delete everything this guide created:**
+
+```
+cleanup
+```
+
+It removes the scheduler job, the retraining job, the Pub/Sub topic and subscription, the service, the metric, the BigQuery dataset (**including the audit log**), the bucket, the image repository, the secret and the service accounts.
+
+To remove absolutely everything, delete the project: `gcloud projects delete $PROJECT_ID`.
+
+## E15. When something goes wrong
+
+| What you see | Likely cause | What to do |
+|---|---|---|
+| `PERMISSION_DENIED` during `gcloud builds submit` | The Cloud Build account can't write to Artifact Registry | In IAM, give the build service account (shown in the error) the **Artifact Registry Writer** role |
+| `403 Forbidden` when calling the service | No identity token, or you lack the invoker role | Add the `Authorization: Bearer $(gcloud auth print-identity-token)` header; re-run the `add-iam-policy-binding` line in step 6 |
+| `Service account ... does not exist` | IAM changes take a minute to spread | Wait a minute and run the step again |
+| `The bucket name is already taken` | Bucket names are global | Set `export BUCKET=something-unique` and `source gcp/deploy.sh` again |
+| The first request takes several seconds | A cold start: the models are loading | Normal with `--min-instances=0`; use 1 or more in production |
+| Decisions work but BigQuery stays empty | The scorer can't write to the table | In Logs Explorer, search for `bigquery_insert_failed` and check the step-4 permission. The payment decision itself is never blocked by this |
+| Pub/Sub messages keep retrying | The push identity can't call the service | Check the invoker role for `pubsub-push` (step 8). Older projects may also need the Pub/Sub service agent to have **Service Account Token Creator** |
+| `Jev HTTP 401` in the logs | Wrong or expired Jev key | Save the new key in a file and run `gcloud secrets versions add typesafe-api-key --data-file=newkey.txt`, delete the file, then redeploy (step 6) |
+| Error loading `challenger.joblib` | The scikit-learn version differs from the one that trained it | Keep the versions pinned in `requirements.txt`; retrain inside the same container |
+
+\pagebreak
+
+# Part F. Keeping it safe and fair
+
+| Risk | Example | How the design protects against it |
+|---|---|---|
+| **Fraud that looks genuine** | The fake car dealer | Several independent clues; shared mule-account lists; Confirmation of Payee; customer education |
+| **Too many false alarms** | Genuine customers blocked at the till | Bands sized to capacity; most interruptions are one tap; 1 genuine BLOCK in 9,456 |
+| **Criminals change their words** | New scam scripts | New wording is *more* surprising to the mini LLM, which helps; weekly retraining |
+| **Normal wording changes** | A new popular shop looks "surprising" | Watch the average surprise (E10) and retrain |
+| **A model's percentages drift** | Jev's 70% no longer means 70% | Weekly checks; every decision records model versions |
+| **The AI makes something up** | A false reason in a case file | The mini LLM never writes; all messages are templates |
+| **Data leaves the bank** | Payment details sent to Jev | Send the minimum; contract and data-protection review first; fixed outgoing address (E13) |
+| **A service outage** | The scorer doesn't answer | The payment system uses a pre-agreed fallback (usually STEP-UP); Cloud Run restarts copies automatically |
+| **Unfair treatment** | One group is stopped more often | Monitor STEP-UP and HOLD rates by customer segment |
+
+**What the rules say:**
+
+- **UK APP scams:** since 7 October 2024, mandatory reimbursement up to £85,000 per claim, shared between the sending and receiving banks.
+- **Model risk (PRA SS1/23):** a fraud model is a model. It must be listed in the model inventory, independently validated, monitored, and changed only through a controlled process. That is why promotion in E12 needs a person.
+- **EU AI Act:** AI used to detect financial fraud is specifically excluded from the high-risk "creditworthiness" category. GDPR still applies.
+- **Cloud outsourcing (PRA SS2/21):** running a critical service on Google Cloud needs an outsourcing assessment, an exit plan and resilience testing.
+
+# Glossary
 
 | Term | Plain meaning |
 |---|---|
 | **APP scam** | Authorised push payment scam: the real customer is tricked into sending money |
-| **Account takeover** | A criminal gains control of the customer's online banking |
-| **Card not present fraud** | Stolen card details used online or by phone |
+| **Account takeover** | A criminal controls the customer's online banking |
+| **Audit log** | A permanent record of every decision and why it was made |
+| **Bits per character** | How many yes/no guesses the mini LLM needs per letter; high means unusual text |
+| **Bucket** | A container for files in Cloud Storage |
+| **Canary** | Sending a small share of traffic to a new version before switching everyone |
+| **Challenger** | A second, independent model used to check the first |
+| **Cloud Run** | Google's service that runs a container as a web service and scales it automatically |
+| **Cloud Shell** | A free terminal in the browser with Google Cloud tools installed |
+| **Cold start** | The delay while a new copy of a service starts up |
+| **Container / image** | A program packed with everything it needs, so it runs the same everywhere |
+| **Endpoint** | An address on a web service, such as `/score` |
+| **Feature store** | A fast database of facts about each customer, used at decision time |
+| **Gradient-boosted trees** | Many small decision trees whose answers are added up |
+| **Identity token** | A short-lived digital pass that proves who is calling |
+| **JSON** | A standard text format for structured data |
+| **LLM** | Large language model: software that learned patterns in text |
 | **Mule account** | A bank account used to receive and pass on stolen money |
-| **Noul question** | Jev's yes/no question type, which returns a probability |
-| **Surprise (bits per character)** | How hard the mini LLM finds a description to predict; high = unlike normal text |
-| **Challenger model** | An independent model used to check the main one |
-| **Gradient-boosted trees** | A standard machine-learning model made of many small decision trees |
-| **PR-AUC** | How well a score ranks rare frauds above genuine payments (1.0 = perfect) |
-| **Recall** | The share of all fraud that the system catches |
-| **Calibration** | Whether a model's percentages match what really happens |
+| **Partitioned table** | A BigQuery table split by day, so recent data is quick and cheap to read |
+| **PR-AUC** | A 0-to-1 score for how well a model ranks rare frauds at the top |
+| **Pub/Sub, topic, subscription** | Google's messaging service; a topic is a mailbox, a subscription delivers its messages |
+| **Reason codes** | Short, fixed explanations of why a payment was flagged |
+| **Service account** | An identity for a program, with its own permissions |
 | **STEP-UP** | Asking the customer to confirm, often with a warning |
-| **Reason codes** | Short, fixed explanations of why a transaction was flagged |
-| **Synthetic data** | Realistic but invented data, used to build and test safely |
+| **Synthetic data** | Realistic but invented data |
 
 # Sources
 
 - Simon Willison, "Jev introduces a new shape of LLM" (21 September 2026) — simonwillison.net/2026/Sep/21/jev/
 - Jev AI, "Jev: the System One model for fast, calibrated AI decisions" — jevai.net/articles/what-is-system-one-jev/
 - P. Niessen, "jev-test" benchmark (API request format) — github.com/pniessen/jev-test
-- Payment Systems Regulator, APP scams reimbursement dashboard and PS25/5 policy statement — psr.org.uk
-- Code for this guide: `jev-fraud-detection/code/fraud_jev_llm.py` and `jev_client.py`
+- Payment Systems Regulator, APP scams reimbursement and PS25/5 — psr.org.uk
+- Google Cloud documentation: Cloud Run, Secret Manager, Pub/Sub push subscriptions, BigQuery, Cloud Scheduler — cloud.google.com/docs
+- Code: `jev-fraud-detection/code/` (experiment), `jev-fraud-detection/gcp/` (service, container, deployment script), `jev-fraud-detection/tests/` (14 tests)

@@ -1,0 +1,18 @@
+{
+ "customer_id": 96,
+ "amount": 842.28,
+ "channel": "faster_payment",
+ "description": "SAFE ACCOUNT TRANSFER",
+ "hour": 11.918911580493806,
+ "abroad": false,
+ "median": 17.217560732625074,
+ "new_payee": true,
+ "payee_age": 46.0,
+ "new_device": false,
+ "password_reset": false,
+ "mins_since_login": 4.529304886235556,
+ "txns_last_hour": 0,
+ "unusual_hour": false,
+ "on_mule_list": false,
+ "transaction_id": "DEMO-0001"
+}

@@ -1,0 +1,11 @@
+# Builds the container in Google Cloud and stores it in Artifact Registry.
+#   gcloud builds submit --config gcp/cloudbuild.yaml --substitutions=_REGION=europe-west2,_TAG=v1 .
+substitutions:
+  _REGION: europe-west2
+  _REPO: fraud
+  _TAG: v1
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "gcp/Dockerfile", "-t", "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/fraud-scorer:${_TAG}", "."]
+images:
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/fraud-scorer:${_TAG}"

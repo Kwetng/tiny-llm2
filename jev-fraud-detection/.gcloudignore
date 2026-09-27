@@ -1,0 +1,6 @@
+# Only send what the image needs to Cloud Build
+**/__pycache__/
+**/fraud_outputs/
+diagrams/
+docs/
+example_outputs/

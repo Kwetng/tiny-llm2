@@ -1,0 +1,12 @@
+# CPU-only PyTorch keeps the image small (no GPU libraries)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4,<3          # any recent CPU build loads the mini LLM weights
+# scikit-learn, numpy and joblib must match the versions that trained challenger.joblib
+scikit-learn==1.8.0
+numpy==2.4.4
+joblib==1.5.3
+fastapi==0.141.1
+pydantic==2.13.3
+uvicorn==0.46.0
+google-cloud-bigquery==3.45.2
+google-cloud-storage==3.15.0

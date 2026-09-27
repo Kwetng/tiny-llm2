@@ -4,7 +4,7 @@ This folder shows how to use **Jev**, TypeSafe AI's "System One" decision model,
 
 A spam filter answers *"is this email spam?"* with a probability. Here, Jev answers *"is this transaction fraud or a scam?"* in the same way. The mini LLM adds something Jev's behavioural signals miss: it has read thousands of normal payment descriptions, so it notices when one looks nothing like normal banking text, such as *SAFE ACCOUNT TRANSFER*.
 
-> **Synthetic data, educational code.** Not a production fraud system. Read [the plain-English guide](docs/fraud-guide.md) ([Word version](docs/Jev_Fraud_Detection_Guide.docx)) first.
+> **Synthetic data, educational code.** Not a production fraud system. Read [the step-by-step guide](docs/fraud-guide.md) ([Word version](docs/Jev_Fraud_Detection_Guide.docx)) first. It follows one payment through every step, then shows how to run the scorer on your computer and on **Google Cloud**.
 
 ![System flow](diagrams/fraud_flow.png)
 
@@ -15,6 +15,8 @@ A spam filter answers *"is this email spam?"* with a probability. Here, Jev answ
 | `code/fraud_jev_llm.py` | The full pipeline: synthetic data → mini LLM → Jev → challenger → decision engine → case files and audit log |
 | `code/jev_client.py` | Jev API client, plus a clearly labelled offline stand-in (**not Jev**) with the same response format |
 | `code/make_figures.py` | Rebuilds the diagrams and charts in `diagrams/` from `example_outputs/` |
+| `gcp/` | **Google Cloud deployment:** the scoring web service (`service/main.py`, `scorer.py`), the weekly retraining job (`service/retrain.py`), `Dockerfile`, `cloudbuild.yaml`, the numbered deployment script `deploy.sh`, BigQuery table schemas, `monitoring.sql` and a trained `model_bundle/` |
+| `tests/` | 14 tests: the service gives exactly the batch pipeline's decision for all six examples, Pub/Sub messages, input checks, the mule-list rule, the BigQuery row format and loading a bundle from Cloud Storage |
 | `example_outputs/` | Results of the full run: six case files, `audit_log.jsonl`, `metrics.json`, `model_card.md`, `run_log.txt` |
 | `docs/fraud-guide.md` | Plain-English guide with worked examples (also as a Word document) |
 | `diagrams/` | Flow diagram, action ladder and result charts |
@@ -78,6 +80,29 @@ python fraud_jev_llm.py --quick      # smaller run
 ```
 
 Outputs go to `code/fraud_outputs/`. To rebuild the figures, copy that folder to `example_outputs/` and run `python code/make_figures.py` from this folder (it needs `cairosvg` and `matplotlib`).
+
+## Run it on Google Cloud
+
+![Google Cloud architecture](diagrams/gcp_architecture.png)
+
+The scorer runs as a private **Cloud Run** service:
+
+- **Input:** it takes payments over HTTPS for real-time decisions, or as **Pub/Sub** messages.
+- **Jev key:** read from **Secret Manager**.
+- **Models:** loaded from **Cloud Storage**.
+- **Audit log:** every decision is written to **BigQuery** and Cloud Logging.
+- **Retraining:** a weekly **Cloud Run job**, started by **Cloud Scheduler**, trains a new model bundle. A person reviews it before a canary release.
+
+```bash
+# in Cloud Shell, from this folder
+export PROJECT_ID=my-fraud-demo-123 REGION=europe-west2
+source gcp/deploy.sh
+step1_project; step2_identities; step3_jev_key; step4_storage; step5_build; step6_deploy; step7_test
+```
+
+Each step is explained in Part E of the guide, with the controls a bank would add: private ingress, VPC Service Controls, CMEK, a fixed egress IP for Jev and Binary Authorization.
+
+The service is tested locally: 14 tests, plus real HTTP calls in about 3 ms per decision with the stand-in. The Google Cloud commands are syntax-checked (`shellcheck`) but were **not run against a live Google Cloud account** from the build environment.
 
 ## Important: the numbers above come from the offline stand-in, not Jev
 

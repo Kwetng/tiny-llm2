@@ -36,8 +36,10 @@ class JevClient:
         for attempt in range(5):
             req = urllib.request.Request(API_URL, data=body, headers={
                 "Authorization": "Bearer " + self.key, "Content-Type": "application/json"})
+            if not req.full_url.startswith("https://"):
+                raise ValueError("Jev must be called over HTTPS")
             try:
-                with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                with urllib.request.urlopen(req, timeout=self.timeout) as r:  # nosec B310 - HTTPS enforced above
                     data = json.load(r)
                 self.input_tokens += data.get("usage", {}).get("input_tokens", 0)
                 return {"model": data.get("model", self.model), "answers": data["answers"]}
