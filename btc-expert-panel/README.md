@@ -2,7 +2,7 @@
 
 A weekly "investment committee" for Bitcoin, backtested on real data. Five AI experts from three of Kwet's projects each call Bitcoin's next week LONG, FLAT or SHORT. A panel chair acts only when at least 3 of the 5 agree. Everything is tested walk-forward, out of sample, from January 2020 to May 2026.
 
-**[Open the dashboard](dashboard/index.html)** (download and open in a browser)
+**[Open the dashboard](dashboard/index.html)** (download and open in a browser) · **[Plain-English guide](docs/panel-guide.md)** ([Word version](docs/BTC_Expert_Panel_Guide.docx))
 
 ![Dashboard](docs/img/docs_img_top.png)
 
@@ -88,7 +88,7 @@ All seeds are fixed, so re-running should reproduce these numbers.
 | `code/dashboard_template.html`, `code/make_dashboard.py` | The dashboard |
 | `outputs/` | `panel_results.json`, `weekly_signals.csv`, `performance_summary.csv`, `yearly_returns.csv`, `weekly_features.csv` |
 | `dashboard/index.html` | Self-contained dashboard; needs internet for the chart library and fonts |
-| `docs/img/` | Dashboard screenshots |
+| `docs/` | Plain-English guide (Markdown and Word) and dashboard screenshots |
 
 ## How the source projects were adapted
 

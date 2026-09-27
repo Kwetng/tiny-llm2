@@ -4,6 +4,8 @@
 
 This is the platform a new AI Engineering function would build first. It gives Capital Markets and Corporate Banking one governed gateway for every model call. Every use case on it inherits the same controls: entitlement-aware retrieval, prompt-injection defence, PII redaction, grounding checks, model routing across Azure and GCP, a tamper-evident audit trail, an evaluation gate in CI, drift monitoring, and automatically generated model-risk evidence.
 
+**[Plain-English guide](docs/sentinel-guide.md)** ([Word version](docs/Sentinel_AI_Platform_Guide.docx)) · **[Interview walkthrough](docs/interview-walkthrough.md)**
+
 It runs entirely on a laptop. A deterministic local model answers when no cloud credentials are set, so the tests and the release gate need no cloud account.
 
 ```mermaid
@@ -95,7 +97,7 @@ Each hosted model must pass the same evaluation gate before it is relied on.
 | `governance/` | Use-case register and risk tiers, control mapping, evidence-pack generator and latest pack |
 | `infra/terraform/` | Azure and GCP landing zones |
 | `monitoring/` | Latest monitoring report |
-| `docs/` | Architecture, ADRs 0001–0005, operating model, interview walkthrough |
+| `docs/` | Plain-English guide (Markdown and Word), architecture, ADRs 0001–0005, operating model, interview walkthrough |
 | `tests/` | Unit and API tests |
 
 ## Limitations
