@@ -1,5 +1,5 @@
 <title>BTC Expert Panel</title>
-<meta name="description" content="Six AI experts call Bitcoin's next week: walk-forward signals and performance since 2020.">
+<meta name="description" content="Six experts, including the Phantom Flow indicator, call Bitcoin's next week: walk-forward signals and performance since 2020.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -8,7 +8,7 @@
   --bg:#F3F4F6; --surface:#FFFFFF; --surface2:#F8F9FA; --ink:#14161B; --ink2:#545B69; --ink3:#7C8392; --rule:#E2E4E9;
   --accent:#B85F0E; --accent-soft:#FBEBDB;
   --long:#2a78d6; --short:#e34948; --flat:#dcdbd6; --bh:#8a8f99;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#4a3aa7;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7;
   --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
@@ -19,7 +19,7 @@
     --bg:#0F1115; --surface:#171A20; --surface2:#1C2027; --ink:#F2F3F5; --ink2:#A9AFBC; --ink3:#7D8491; --rule:#2A2E36;
     --accent:#F29A3A; --accent-soft:#3A2A18;
     --long:#3987e5; --short:#e66767; --flat:#3a3d44; --bh:#8d93a0;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#9085e9;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
   }
 }
 :root[data-theme="dark"]{
@@ -27,7 +27,7 @@
   --bg:#0F1115; --surface:#171A20; --surface2:#1C2027; --ink:#F2F3F5; --ink2:#A9AFBC; --ink3:#7D8491; --rule:#2A2E36;
   --accent:#F29A3A; --accent-soft:#3A2A18;
   --long:#3987e5; --short:#e66767; --flat:#3a3d44; --bh:#8d93a0;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#9085e9;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;margin:0}
@@ -57,7 +57,13 @@ header .facts b{color:var(--ink);font-weight:500}
 .pill.big::before{width:12px;height:12px}
 .seats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .seat{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
-.seat.chair{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.seat.chair{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;grid-column:1/-1}
+.seat.chair .why{min-height:0}
+.pfgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.pfgrid>div{background:var(--surface2);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.pfgrid .v{font-family:var(--mono);font-size:15px}
+.sens td.def{font-weight:600;outline:2px solid var(--accent);outline-offset:-2px}
+@media (max-width:640px){.pfgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .seat .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .seat h3{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
 .swatch{width:10px;height:10px;border-radius:2px;flex:none}
@@ -136,7 +142,7 @@ footer a{color:var(--ink2)}
   <section aria-labelledby="calls-h" style="display:flex;flex-direction:column;gap:12px">
     <div class="panel-head" style="padding:0 2px">
       <h2 id="calls-h">Latest calls</h2>
-      <p><span id="stale"></span> Each expert gives the chance that Bitcoin is higher in 7 days. At 55% or more it goes LONG; at 45% or less, SHORT; in between, FLAT. The panel chair acts only when 3 of the 5 experts agree.</p>
+      <p><span id="stale"></span> Each expert gives the chance that Bitcoin is higher in 7 days. At 55% or more it goes LONG; at 45% or less, SHORT; in between, FLAT. Phantom Flow gives a confluence score instead (−3 to +3, shown on the same scale); it acts only when its trend shift and oscillator agree and structure does not contradict. The panel chair acts when at least 3 of the 6 experts agree and they outnumber those on the other side.</p>
     </div>
     <div class="seats" id="seats"></div>
   </section>
@@ -175,6 +181,19 @@ footer a{color:var(--ink2)}
     <div class="chartbox short"><canvas id="pxChart" aria-label="Bitcoin price with panel positions"></canvas></div>
   </section>
 
+  <section class="panel" aria-labelledby="pf-h">
+    <div class="panel-head">
+      <h2 id="pf-h">Phantom Flow on the daily chart</h2>
+      <p>The trend shift's trailing stop sits under price in an uptrend (blue) and over it in a downtrend (red). Triangles mark structure breaks: filled for a change of character (trend reversal), hollow for a break of structure (continuation; shown when you pick a single year). Below: the oscillator, in ATRs from the 21-day average.</p>
+    </div>
+    <div class="pfgrid" id="pfnow"></div>
+    <div class="chartbox short"><canvas id="pfChart" aria-label="Bitcoin daily price with Phantom Flow trailing stop and structure breaks"></canvas></div>
+    <div class="chartbox" style="height:150px"><canvas id="oscChart" aria-label="Phantom Flow oscillator"></canvas></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>BTC daily close</span><span><i style="background:var(--long)"></i>stop, uptrend</span><span><i style="background:var(--short)"></i>stop, downtrend</span><span>▲▼ change of character</span><span>△▽ break of structure</span></div>
+    <div class="panel-head" style="margin-top:6px"><h3 style="font-size:16px">Does it depend on the settings?</h3><p>Sharpe ratio over the whole test for other ATR multipliers and pivot lengths: Phantom Flow on its own, and the six-expert panel chair using that version. The outlined cell is the setting used, fixed before the backtest; the others are only a check.</p></div>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"><div class="scroll"><table class="matrix sens" id="sens"></table></div><div class="scroll"><table class="matrix sens" id="sens2"></table></div></div>
+  </section>
+
   <div class="grid2">
     <section class="panel" aria-labelledby="yr-h">
       <div class="panel-head"><h2 id="yr-h">Calendar-year returns</h2></div>
@@ -194,7 +213,8 @@ footer a{color:var(--ink2)}
         <li><b>Neuroplastic World Model</b>: the V5 predictive-latent ensemble (<span class="num">neuroplastic-financial-world-model</span>). Six networks learn to predict the next state of the Bitcoin "world" and next week's return; it trades only when 4 of 6 agree.</li>
         <li><b>Jev (System One)</b>: TypeSafe AI's decision model answers "Will Bitcoin be higher in 7 days?" and names the market regime. <b>In this run it is an offline stand-in, not Jev</b>: a fixed trend-and-valuation rule.</li>
         <li><b>Mini LLM tape reader</b>: the from-scratch GPT in <span class="num">tiny-llm2</span>, trained on daily returns written as letters (a = big fall … g = big rise). It writes 256 possible next weeks and reports how many end higher.</li>
-        <li><b>Panel chair</b>: LONG or SHORT only when at least 3 of the 5 experts agree.</li>
+        <li><b>Phantom Flow</b>: an open re-implementation of the paid TradingView indicator's three published modules on daily closes: an ATR trend shift (ATR 10 × 3), swing structure (breaks of 5-day swing highs and lows) and an oscillator (distance from the 21-day average in ATRs). Its "combo" call needs shift and oscillator to agree and structure not to disagree. It needs no training, so it is not refitted each year.</li>
+        <li><b>Panel chair</b>: LONG or SHORT when at least 3 of the 6 experts agree and they outnumber the other side. The dashed grey line is the earlier 5-expert chair (3 of 5, no Phantom Flow), kept to show what the new expert adds.</li>
       </ul>
     </section>
     <section class="panel" aria-labelledby="read-h">
@@ -204,6 +224,8 @@ footer a{color:var(--ink2)}
         <li>2020–2021 was a strong bull market, so buy and hold is hard to beat on return. Compare drawdowns and Sharpe ratios too.</li>
         <li>The mini LLM memorised the past tape: on new data its surprise (about 4.9 bits a day) was worse than blind guessing (2.8 bits), and its results faded after 2021.</li>
         <li>The Jev figures come from the stand-in. Set an API key and re-run to test the real model.</li>
+        <li id="pfeffect"></li>
+        <li>Phantom Flow here is not the proprietary script, whose formulas are private: it follows the published description with standard formulas, uses closes only (no order blocks or fair value gaps) and cannot repaint, because a swing point only counts once the 5 days after it have closed.</li>
         <li>Research on historical data, not investment advice.</li>
       </ul>
     </section>
@@ -216,15 +238,16 @@ footer a{color:var(--ink2)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 const D = /*__DATA__*/null;
-const NAMES = D.experts, ALL = [...NAMES, "Buy & hold"], CHAIR = "Panel chair (consensus)";
+const NAMES = D.experts, BENCH = D.benchmarks, ALL = [...NAMES, ...BENCH], CHAIR = "Panel chair (consensus)", OLD = "Chair without Phantom Flow";
+const EXPERTS = NAMES.filter(n => n !== CHAIR);
 const N = D.n_done;
 const SRC = {"Random Forest":"projectskf · quant research","Tabular Transformer":"projectskf · quant research",
   "Neuroplastic World Model":"neuroplastic-financial-world-model · V5","Jev (System One)":"TypeSafe AI · offline stand-in",
-  "Mini LLM tape reader":"tiny-llm2 · mini_gpt","Panel chair (consensus)":"panel rule · 3 of 5 must agree"};
+  "Mini LLM tape reader":"tiny-llm2 · mini_gpt","Phantom Flow":"indicator · open re-implementation","Panel chair (consensus)":"panel rule · 3 of 6 and a majority of those taking a side"};
 const SHORTNAME = {"Random Forest":"Random Forest","Tabular Transformer":"Transformer","Neuroplastic World Model":"Neuroplastic",
-  "Jev (System One)":"Jev","Mini LLM tape reader":"Mini LLM","Panel chair (consensus)":"Panel chair","Buy & hold":"Buy & hold"};
+  "Jev (System One)":"Jev","Mini LLM tape reader":"Mini LLM","Phantom Flow":"Phantom Flow","Panel chair (consensus)":"Panel chair",[OLD]:"Chair w/o PF","Buy & hold":"Buy & hold"};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const colorOf = n => n === "Buy & hold" ? css("--bh") : css("--s" + (NAMES.indexOf(n) + 1));
+const colorOf = n => n === "Buy & hold" ? css("--bh") : n === OLD ? css("--ink3") : css("--s" + (NAMES.indexOf(n) + 1));
 const pct = (v, d = 0) => { const s = Math.abs(v * 100).toFixed(d); return (+s === 0 ? "" : v >= 0 ? "+" : "−") + s + "%"; };
 const pct0 = (v, d = 0) => (v * 100).toFixed(d) + "%";
 const fmtDate = s => new Date(s + "T00:00:00Z").toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"});
@@ -254,16 +277,17 @@ document.getElementById("facts").innerHTML =
   (M.decision_model.toLowerCase().includes("stand-in") ? `<span class="badge" title="${esc(M.decision_model)}">Jev: offline stand-in</span>` : `<span class="badge">Jev: live API</span>`);
 
 document.getElementById("stale").textContent = `The public data ends on ${fmtDate(M.data_to)}, so these are the calls for the week after ${fmtDate(M.live_week)}. Re-run with newer data to update them.`;
-const chairNow = live[CHAIR], tallyL = NAMES.slice(0, 5).filter(n => live[n].action === "LONG").length,
-      tallyS = NAMES.slice(0, 5).filter(n => live[n].action === "SHORT").length;
+const chairNow = live[CHAIR], tallyL = EXPERTS.filter(n => live[n].action === "LONG").length,
+      tallyS = EXPERTS.filter(n => live[n].action === "SHORT").length;
+const PFD = D.phantom_flow, pfLast = PFD.dates.length - 1, UPDN = x => x > 0 ? "up" : x < 0 ? "down" : "–";
 const best = NAMES.reduce((a, b) => FULL[a].sharpe > FULL[b].sharpe ? a : b);
 document.getElementById("verdict").innerHTML = `
   <div><span class="eyebrow">Panel verdict</span><div class="big"><span class="pill big ${chairNow.action}">${chairNow.action}</span>
-    <span class="num" style="font-size:16px;font-weight:500;color:var(--ink2)">${tallyL} long · ${5 - tallyL - tallyS} flat · ${tallyS} short</span></div>
-    <span class="muted" style="font-size:13px">Average P(up) across the five experts: <span class="num">${pct0(chairNow.p_up)}</span></span></div>
+    <span class="num" style="font-size:16px;font-weight:500;color:var(--ink2)">${tallyL} long · ${EXPERTS.length - tallyL - tallyS} flat · ${tallyS} short</span></div>
+    <span class="muted" style="font-size:13px">Average P(up) across the six experts: <span class="num">${pct0(chairNow.p_up)}</span> · without Phantom Flow the chair would say <b>${LBL[D.action[OLD][D.action[OLD].length - 1]]}</b></span></div>
   <div><span class="eyebrow">Best Sharpe since ${M.test_start.slice(0, 4)}</span><span class="stat">${FULL[best].sharpe.toFixed(2)}</span><span class="muted" style="font-size:13px">${SHORTNAME[best]} · buy &amp; hold ${FULL["Buy & hold"].sharpe.toFixed(2)}</span></div>
   <div><span class="eyebrow">Panel chair drawdown</span><span class="stat">${pct(FULL[CHAIR].maxdd)}</span><span class="muted" style="font-size:13px">buy &amp; hold ${pct(FULL["Buy & hold"].maxdd)}</span></div>
-  <div><span class="eyebrow">Jev regime · LLM surprise</span><span class="stat" style="font-size:18px">${esc(D.regime[D.regime.length - 1])}</span><span class="muted" style="font-size:13px">tape surprise <span class="num">${D.surprise[D.surprise.length - 1].toFixed(2)}</span> bits/day (typical ${median(D.surprise).toFixed(1)})</span></div>`;
+  <div><span class="eyebrow">Phantom Flow · last day of data</span><span class="stat" style="font-size:18px"><span class="pill ${LBL[PFD.call[pfLast]]}">${LBL[PFD.call[pfLast]]}</span></span><span class="muted" style="font-size:13px">${fmtDate(PFD.dates[pfLast])}: shift ${UPDN(PFD.shift[pfLast])} · structure ${UPDN(PFD.structure[pfLast])} · oscillator <span class="num">${PFD.osc[pfLast] >= 0 ? "+" : "−"}${Math.abs(PFD.osc[pfLast]).toFixed(2)}</span> ATR. Its weekly vote on ${fmtDate(M.live_week)} was ${live["Phantom Flow"].action}.</span></div>`;
 function median(a) { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
 
 const [SH, LG] = M.thresholds;
@@ -272,10 +296,10 @@ document.getElementById("seats").innerHTML = NAMES.map(n => {
   return `<article class="seat${n === CHAIR ? " chair" : ""}">
     <div class="top"><div><h3><span class="swatch" style="background:var(--s${NAMES.indexOf(n) + 1})"></span>${esc(n)}</h3><div class="src">${esc(SRC[n])}</div></div>
       <span class="pill ${v.action}">${v.action}</span></div>
-    <div><div class="meter" role="img" aria-label="P(up) ${pct0(v.p_up)}"><div class="track"></div>
-      <div class="tick" style="left:${SH * 100}%"></div><div class="tick" style="left:${LG * 100}%"></div>
+    <div><div class="meter" role="img" aria-label="${n === "Phantom Flow" ? "confluence score" : "P(up) " + pct0(v.p_up)}"><div class="track"${n === "Phantom Flow" ? ' style="background:var(--surface2)"' : ""}></div>
+      ${n === "Phantom Flow" ? "" : `<div class="tick" style="left:${SH * 100}%"></div><div class="tick" style="left:${LG * 100}%"></div>`}
       <div class="dot" style="left:${Math.min(99.5, Math.max(.5, v.p_up * 100))}%"></div></div>
-      <div class="meter-labels"><span>0%</span><span>P(up) <b style="color:var(--ink)" class="num">${pct0(v.p_up)}</b></span><span>100%</span></div></div>
+      <div class="meter-labels">${n === "Phantom Flow" ? `<span>−3</span><span>confluence <b style="color:var(--ink)" class="num">${(v.p_up - .5) * 8 > 0 ? "+" : ""}${Math.round((v.p_up - .5) * 8)}</b> of 3</span><span>+3</span>` : `<span>0%</span><span>P(up) <b style="color:var(--ink)" class="num">${pct0(v.p_up)}</b></span><span>100%</span>`}</div></div>
     <div class="why">${esc(v.why)}</div>
     <div class="kpis"><div class="kpi"><div class="l">Sharpe</div><div class="v">${f.sharpe.toFixed(2)}</div></div>
       <div class="kpi"><div class="l">Hit rate</div><div class="v">${f.hit == null ? "–" : pct0(f.hit, 1)}</div></div>
@@ -326,7 +350,7 @@ function renderEquity() {
   const labels = D.dates.slice(a, b + 2);
   const sets = ALL.map(n => ({label: SHORTNAME[n], full: n, data: [1, ...D.equity[n].slice(a, b + 1).map(v => v / base(n))],
     borderColor: colorOf(n), backgroundColor: colorOf(n), borderWidth: n === CHAIR ? 3 : 1.75, pointRadius: 0, pointHoverRadius: 4,
-    borderDash: n === "Buy & hold" ? [6, 4] : [], tension: 0}));
+    borderDash: n === "Buy & hold" ? [6, 4] : n === OLD ? [2, 3] : [], tension: 0}));
   const cfg = {type: "line", data: {labels, datasets: sets}, plugins: [crosshair],
     options: {responsive: true, maintainAspectRatio: false, animation: false, interaction: {mode: "index", intersect: false},
       scales: {x: {...axisStyle(), ticks: {...axisStyle().ticks, maxTicksLimit: 8, callback: (v, i) => fmtDate(labels[i]).replace(/^\d+ /, "")}},
@@ -351,6 +375,61 @@ function renderPrice() {
   if (pxChart) pxChart.destroy(); pxChart = new Chart(document.getElementById("pxChart"), cfg);
 }
 
+// ---------- Phantom Flow daily chart ----------
+let pfChart, oscChart;
+const markerCanvas = (filled, up) => { const c = document.createElement("canvas"); c.width = c.height = 11;
+  const x = c.getContext("2d"); x.beginPath(); if (up) { x.moveTo(5.5, 1); x.lineTo(10, 10); x.lineTo(1, 10); } else { x.moveTo(1, 1); x.lineTo(10, 1); x.lineTo(5.5, 10); } x.closePath();
+  x.lineWidth = 1.3; x.strokeStyle = css(up ? "--long" : "--short"); x.fillStyle = filled ? x.strokeStyle : css("--surface"); x.fill(); x.stroke(); return c; };
+function renderPF() {
+  const [, a, b] = range, d0 = D.dates[a], d1 = D.dates[Math.min(b + 1, D.dates.length - 1)];
+  let i0 = PFD.dates.findIndex(d => d >= d0); if (i0 < 0) i0 = 0;
+  let i1 = PFD.dates.length - 1; if (b < N - 1) { const k = PFD.dates.findIndex(d => d > d1); if (k > 0) i1 = k - 1; }
+  const labels = PFD.dates.slice(i0, i1 + 1), close = PFD.close.slice(i0, i1 + 1), stop = PFD.stop.slice(i0, i1 + 1), sh = PFD.shift.slice(i0, i1 + 1);
+  const longView = i1 - i0 > 800;                          // over several years, mark only trend reversals
+  const evIdx = new Map(PFD.events.filter(([, e]) => !longView || e.startsWith("CHoCH")).map(([d, e]) => [d, e]));
+  const mk = labels.map((d, j) => evIdx.has(d) ? close[j] : null);
+  const style = labels.map(d => { const e = evIdx.get(d); return e ? markerCanvas(e.startsWith("CHoCH"), e.endsWith("+")) : false; });
+  const cfg = {type: "line", data: {labels, datasets: [
+      {label: "BTC", data: close, borderColor: css("--accent"), backgroundColor: css("--accent"), borderWidth: 1.4, pointRadius: 0, pointHoverRadius: 3, tension: 0, order: 2},
+      {label: "Stop", data: stop, borderWidth: 1.6, pointRadius: 0, pointHoverRadius: 0, tension: 0, order: 3, borderColor: css("--long"),
+       segment: {borderColor: c => sh[c.p1DataIndex] > 0 ? css("--long") : css("--short"), borderDash: c => sh[c.p1DataIndex] !== sh[c.p0DataIndex] ? [2, 3] : []}},
+      {label: "Structure", data: mk, showLine: false, pointStyle: style, pointRadius: 6, pointHoverRadius: 7, order: 1}]},
+    plugins: [crosshair],
+    options: {responsive: true, maintainAspectRatio: false, animation: false, interaction: {mode: "index", intersect: false},
+      scales: {x: {...axisStyle(), ticks: {...axisStyle().ticks, maxTicksLimit: 8, callback: (v, i) => fmtDate(labels[i]).replace(/^\d+ /, "")}},
+               y: longView ? {...axisStyle(), type: "logarithmic", ticks: {...axisStyle().ticks, callback: v => { const s = String(v); return /^(1|2|5)0+$/.test(s) ? "$" + Number(v).toLocaleString("en-US") : ""; }}}
+                           : {...axisStyle(), ticks: {...axisStyle().ticks, maxTicksLimit: 6, callback: v => "$" + Math.round(v / 1000) + "k"}}},
+      plugins: {legend: {display: false}, tooltip: {filter: i => i.datasetIndex < 2, callbacks: {title: i => fmtDate(labels[i[0].dataIndex]),
+        label: i => i.datasetIndex === 0 ? ` BTC $${Math.round(i.parsed.y).toLocaleString("en-US")}` : ` Stop $${Math.round(i.parsed.y).toLocaleString("en-US")} (trend ${UPDN(sh[i.dataIndex])})`,
+        afterBody: i => { const e = evIdx.get(labels[i[0].dataIndex]); return e ? [` ${e.startsWith("CHoCH") ? "Change of character" : "Break of structure"} ${e.endsWith("+") ? "up" : "down"}`] : []; }}}}}};
+  if (pfChart) pfChart.destroy(); pfChart = new Chart(document.getElementById("pfChart"), cfg);
+  const osc = PFD.osc.slice(i0, i1 + 1);
+  const ocfg = {type: "bar", data: {labels, datasets: [{label: "Oscillator", data: osc, backgroundColor: osc.map(v => v >= 0 ? css("--long") : css("--short")), borderWidth: 0, barPercentage: 1, categoryPercentage: 1}]},
+    plugins: [crosshair],
+    options: {responsive: true, maintainAspectRatio: false, animation: false, interaction: {mode: "index", intersect: false},
+      scales: {x: {...axisStyle(), ticks: {display: false}, grid: {display: false}}, y: {...axisStyle(), ticks: {...axisStyle().ticks, maxTicksLimit: 5}}},
+      plugins: {legend: {display: false}, tooltip: {callbacks: {title: i => fmtDate(labels[i[0].dataIndex]), label: i => ` Oscillator ${i.parsed.y >= 0 ? "+" : "−"}${Math.abs(i.parsed.y).toFixed(2)} ATR`}}}}};
+  if (oscChart) oscChart.destroy(); oscChart = new Chart(document.getElementById("oscChart"), ocfg);
+}
+function renderPFStatic() {
+  const E = D.pf_effect;
+  document.getElementById("pfeffect").innerHTML = `<b>Adding Phantom Flow lifted the chair's Sharpe from ${E.sharpe_old.toFixed(2)} to ${E.sharpe_new.toFixed(2)}, but that may be luck.</b> ` +
+    `The 95% range of the difference is ${E.ci95[0] >= 0 ? "+" : "−"}${Math.abs(E.ci95[0]).toFixed(2)} to +${E.ci95[1].toFixed(2)}, and most of the gain came in 2020: excluding it, ${E.ex2020.new.toFixed(2)} against ${E.ex2020.old.toFixed(2)}. ` +
+    `Phantom Flow alone did worse than buy and hold.`;
+  const L = pfLast, ev = PFD.events[PFD.events.length - 1];
+  document.getElementById("pfnow").innerHTML =
+    `<div><span class="eyebrow">Trend shift</span><span class="v">${UPDN(PFD.shift[L])}</span><span class="muted" style="font-size:12px">stop $${Math.round(PFD.stop[L]).toLocaleString("en-US")}</span></div>` +
+    `<div><span class="eyebrow">Structure</span><span class="v">${PFD.structure[L] > 0 ? "bullish" : PFD.structure[L] < 0 ? "bearish" : "none"}</span><span class="muted" style="font-size:12px">last: ${ev[1].startsWith("CHoCH") ? "change of character" : "break of structure"} ${ev[1].endsWith("+") ? "up" : "down"}, ${fmtDate(ev[0])}</span></div>` +
+    `<div><span class="eyebrow">Oscillator</span><span class="v">${PFD.osc[L] >= 0 ? "+" : "−"}${Math.abs(PFD.osc[L]).toFixed(2)} ATR</span><span class="muted" style="font-size:12px">vs 21-day average</span></div>` +
+    `<div><span class="eyebrow">Daily call · ${fmtDate(PFD.dates[L])}</span><span class="v"><span class="pill ${LBL[PFD.call[L]]}">${LBL[PFD.call[L]]}</span></span><span class="muted" style="font-size:12px">panel uses the Sunday close</span></div>`;
+  const S = D.pf_sensitivity, mults = [...new Set(S.map(s => s.mult))], pivs = [...new Set(S.map(s => s.pivot))];
+  const tbl = (id, title, key, tipf, cap) => document.getElementById(id).innerHTML = `<thead><tr><th>${title}</th>${pivs.map(p => `<th>pivot ${p}d</th>`).join("")}</tr></thead><tbody>` +
+    mults.map(m => `<tr><td>ATR × ${m}</td>${pivs.map(p => { const s = S.find(x => x.mult === m && x.pivot === p); return `<td class="${s.default ? "def" : ""}" title="${tipf(s)}">${s[key].toFixed(2)}</td>`; }).join("")}</tr>`).join("") +
+    `</tbody><caption style="caption-side:bottom;text-align:left;font-size:12px;color:var(--ink3);padding-top:8px">${cap}</caption>`;
+  tbl("sens", "Phantom Flow alone", "sharpe", s => `total ${pct(s.total_return)}, max drawdown ${pct(s.max_drawdown)}`, `Buy &amp; hold: ${FULL["Buy & hold"].sharpe.toFixed(2)}.`);
+  tbl("sens2", "Panel chair with it", "chair_sharpe", s => `max drawdown ${pct(s.chair_max_drawdown)}`, `Chair without Phantom Flow: ${FULL[OLD].sharpe.toFixed(2)}. Hover for drawdown.`);
+}
+
 // ---------- scorecard ----------
 const COLS = [["Expert", null], ["Total return", "total", pct], ["CAGR", "cagr", v => pct(v, 1)], ["Sharpe", "sharpe", v => v.toFixed(2)],
   ["Max drawdown", "maxdd", v => pct(v)], ["Volatility", "vol", v => pct0(v)], ["Hit rate", "hit", v => v == null ? "–" : pct0(v, 1)],
@@ -361,7 +440,7 @@ function renderScore() {
   S.sort((x, y) => ((x[1][sortKey] ?? -9) - (y[1][sortKey] ?? -9)) * sortDir);
   document.getElementById("score-sub").textContent = `${lab === "All" ? "Whole test period" : lab}: ${b - a + 1} weeks. Click a column to sort. Hit rate counts only weeks where the expert took a position.`;
   document.getElementById("score").innerHTML = `<thead><tr>${COLS.map(c => c[1] ? `<th class="sort" data-k="${c[1]}"${c[1] === sortKey ? ` aria-sort="${sortDir < 0 ? "descending" : "ascending"}"` : ""}>${c[0]}</th>` : `<th>${c[0]}</th>`).join("")}</tr></thead>
-    <tbody>${S.map(([n, s]) => `<tr class="${n === CHAIR ? "chair" : n === "Buy & hold" ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${esc(n)}</span></td>${COLS.slice(1).map(c => `<td>${c[2](s[c[1]])}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    <tbody>${S.map(([n, s]) => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${esc(n)}</span></td>${COLS.slice(1).map(c => `<td>${c[2](s[c[1]])}</td>`).join("")}</tr>`).join("")}</tbody>`;
 }
 document.getElementById("score").addEventListener("click", e => {
   const th = e.target.closest("th.sort"); if (!th) return;
@@ -387,7 +466,7 @@ document.getElementById("heat").addEventListener("mousemove", e => {
   const s = e.target.closest("span[data-i]"); if (!s) { tip.hidden = true; return; }
   const i = +s.dataset.i, mret = i < N ? D.price[i + 1] / D.price[i] - 1 : null;
   tip.innerHTML = `<b>Week of ${fmtDate(D.dates[i])}</b><br>BTC $${Math.round(D.price[i]).toLocaleString("en-US")} → ${mret == null ? "outcome not in the data yet" : pct(mret, 1) + " next week"}<br>` +
-    NAMES.map(n => `${SHORTNAME[n]}: <b>${LBL[D.action[n][i]]}</b> (${pct0(D.p[n][i])})`).join("<br>") + `<br>Jev regime: ${esc(D.regime[i])}`;
+    NAMES.map(n => `${SHORTNAME[n]}: <b>${LBL[D.action[n][i]]}</b> (${n === "Phantom Flow" ? "score " + Math.round((D.p[n][i] - .5) * 8) : pct0(D.p[n][i])})`).join("<br>") + `<br>Jev regime: ${esc(D.regime[i])}`;
   tip.hidden = false;
   const x = Math.min(e.pageX + 14, document.documentElement.scrollWidth - 280);
   tip.style.left = x + "px"; tip.style.top = (e.pageY + 14) + "px";
@@ -399,7 +478,7 @@ function renderStatic() {
   const yrs = Object.keys(D.yearly[ALL[0]]);
   const tint = v => { const k = Math.min(1, Math.abs(v)) * 38; return `background:color-mix(in oklab, var(${v >= 0 ? "--long" : "--short"}) ${k}%, var(--surface))`; };
   document.getElementById("yearly").innerHTML = `<thead><tr><th>Expert</th>${yrs.map(y => `<th>${y}${y === yrs[yrs.length - 1] ? "*" : ""}</th>`).join("")}</tr></thead><tbody>` +
-    ALL.map(n => `<tr class="${n === CHAIR ? "chair" : n === "Buy & hold" ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${SHORTNAME[n]}</span></td>${yrs.map(y => `<td style="${tint(D.yearly[n][y])}">${pct(D.yearly[n][y])}</td>`).join("")}</tr>`).join("") +
+    ALL.map(n => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${SHORTNAME[n]}</span></td>${yrs.map(y => `<td style="${tint(D.yearly[n][y])}">${pct(D.yearly[n][y])}</td>`).join("")}</tr>`).join("") +
     `</tbody><caption style="caption-side:bottom;text-align:left;font-size:12px;color:var(--ink3);padding-top:8px">* ${yrs[yrs.length - 1]} to ${fmtDate(M.test_end)}. Colour intensity follows the size of the return.</caption>`;
   document.getElementById("agree").innerHTML = `<thead><tr><th></th>${NAMES.map(n => `<th>${SHORTNAME[n]}</th>`).join("")}</tr></thead><tbody>` +
     NAMES.map(r => `<tr><td>${SHORTNAME[r]}</td>${NAMES.map(c => { const v = D.agreement[r][c]; return `<td style="background:color-mix(in oklab, var(--s1) ${r === c ? 0 : Math.round(v * 60)}%, var(--surface))">${r === c ? "–" : pct0(v)}</td>`; }).join("")}</tr>`).join("") + "</tbody>";
@@ -407,9 +486,9 @@ function renderStatic() {
     `Weekly Sunday-to-Sunday decisions, ${M.cost_bp} bp cost per unit of turnover, no leverage. Decision model: ${esc(M.decision_model)}. Built ${esc(M.generated)}. Research only, not investment advice.`;
 }
 
-function renderAll() { renderEquity(); renderPrice(); renderScore(); renderHeat(); }
-renderStatic(); renderAll();
-const rerender = () => { renderStatic(); renderAll(); };
+function renderAll() { renderEquity(); renderPrice(); renderPF(); renderScore(); renderHeat(); }
+renderStatic(); renderPFStatic(); renderAll();
+const rerender = () => { renderStatic(); renderPFStatic(); renderAll(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
 new MutationObserver(rerender).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
 </script>

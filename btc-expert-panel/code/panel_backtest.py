@@ -9,7 +9,12 @@ Experts (each gives a weekly LONG / FLAT / SHORT call for the next 7 days):
                                 (offline stand-in unless TYPESAFE_API_KEY is set)
   5. Mini LLM tape reader     - the character-level GPT from mini_gpt.py, trained on daily returns written as
                                 letters; it "writes" 256 possible next weeks and counts how many end higher
-  6. Panel chair (consensus)  - LONG or SHORT only if at least 3 of the 5 experts agree, otherwise FLAT
+  6. Phantom Flow             - open re-implementation of the Phantom Flow indicator's three modules
+                                (ATR trend shift, swing structure BOS/CHoCH, MA oscillator) on daily closes;
+                                acts only when Shift and Oscillator agree and structure does not contradict
+  7. Panel chair (consensus)  - LONG or SHORT only if at least 3 of the 6 experts agree AND more agree than
+                                oppose, otherwise FLAT. The earlier 5-expert chair (3 of 5, no Phantom Flow)
+                                is kept as a benchmark, "Chair without Phantom Flow".
 
 Data: Coin Metrics community data (CC BY-NC 4.0) - price, MVRV, active addresses, hash rate,
 exchange flows - plus the CBOE VIX (datasets/finance-vix). Both are fetched from GitHub.
@@ -36,6 +41,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 
 from jev_market import get_jev
+import phantom_flow
 
 OFFLINE = "--offline" in sys.argv
 HERE = Path(__file__).resolve().parent
@@ -66,6 +72,8 @@ day = cm.copy()
 day["vix"] = vix.reindex(day.index).ffill()
 day["r"] = np.log(day.PriceUSD).diff()
 last_day = day.index.max()
+
+PF = phantom_flow.compute(day.PriceUSD)            # causal: day t uses closes up to t only
 
 wk = pd.DataFrame(index=pd.date_range(day.index.min() + pd.Timedelta(days=7), last_day, freq="W-SUN"))
 P = day.PriceUSD
@@ -248,7 +256,8 @@ def to_action(p):
 # =============================================================================
 jev = get_jev(offline=OFFLINE)
 print(f"Jev: {jev.name}")
-EXPERTS = ["Random Forest", "Tabular Transformer", "Neuroplastic World Model", "Jev (System One)", "Mini LLM tape reader"]
+EXPERTS = ["Random Forest", "Tabular Transformer", "Neuroplastic World Model", "Jev (System One)", "Mini LLM tape reader", "Phantom Flow"]
+OLD_CHAIR = "Chair without Phantom Flow"          # the original 5-expert rule, kept for comparison
 rows = []
 test = wk.loc[f"{TEST_START}-01-01":]
 t_all = time.time()
@@ -273,19 +282,27 @@ for year in sorted(set(test.index.year)):
         p_jev, regime = ja["up_next_week"]["noul"], ja["regime"]["choice"]
         recent = day.r.loc[:date].dropna().values
         p_llm, mu_llm, surprise, tape = tape_forecast(llm, recent, int(date.strftime("%Y%m%d")))
+        pf = PF.loc[:date].iloc[-1]                   # Phantom Flow state at the Sunday close
+        p_pf = phantom_flow.p_up(int(pf.score))
         acts = {"Random Forest": to_action(p_rf), "Tabular Transformer": to_action(p_tf),
                 "Neuroplastic World Model": {"BUY": 1, "SELL": -1, "HOLD": 0}[v5_sig],
-                "Jev (System One)": to_action(p_jev), "Mini LLM tape reader": to_action(p_llm)}
-        n_long, n_short = sum(a == 1 for a in acts.values()), sum(a == -1 for a in acts.values())
-        acts["Panel chair (consensus)"] = 1 if n_long >= 3 else -1 if n_short >= 3 else 0
+                "Jev (System One)": to_action(p_jev), "Mini LLM tape reader": to_action(p_llm),
+                "Phantom Flow": int(pf.call)}
+        old5 = [acts[e] for e in EXPERTS[:5]]
+        acts[OLD_CHAIR] = 1 if old5.count(1) >= 3 else -1 if old5.count(-1) >= 3 else 0
+        n_long, n_short = sum(acts[e] == 1 for e in EXPERTS), sum(acts[e] == -1 for e in EXPERTS)
+        acts["Panel chair (consensus)"] = 1 if (n_long >= 3 and n_long > n_short) else -1 if (n_short >= 3 and n_short > n_long) else 0
         rows.append({"date": date, "price": row.price, "next_ret": row.next_ret,
                      "p": {"Random Forest": p_rf, "Tabular Transformer": p_tf, "Neuroplastic World Model": p_v5,
-                           "Jev (System One)": p_jev, "Mini LLM tape reader": p_llm,
-                           "Panel chair (consensus)": float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm]))},
+                           "Jev (System One)": p_jev, "Mini LLM tape reader": p_llm, "Phantom Flow": p_pf,
+                           OLD_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm])),
+                           "Panel chair (consensus)": float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm, p_pf]))},
                      "action": acts,
                      "detail": {"rf_top_features": [(f, round(float(v), 3)) for f, v in imp], "v5_votes": vc, "v5_pred": v5_mu,
                                 "regime": regime, "llm_mean": mu_llm, "llm_surprise": surprise, "tape": tape,
-                                "n_long": n_long, "n_short": n_short}})
+                                "n_long": n_long, "n_short": n_short,
+                                "pf": {"shift": int(pf["shift"]), "structure": int(pf.structure), "osc": float(pf.osc),
+                                       "stop": float(pf.stop), "score": int(pf.score)}}})
     print(f"  {year}: trained on {len(tr)} weeks, predicted {sum(test.index.year == year)} weeks ({time.time() - t0:.0f}s)")
 print(f"walk-forward done in {time.time() - t_all:.0f}s")
 
@@ -293,11 +310,12 @@ print(f"walk-forward done in {time.time() - t_all:.0f}s")
 # 4. PERFORMANCE
 # =============================================================================
 NAMES = EXPERTS + ["Panel chair (consensus)"]
+BENCH = [OLD_CHAIR, "Buy & hold"]
 dates = [r["date"] for r in rows]
 done = [r for r in rows if not pd.isna(r["next_ret"])]          # weeks whose outcome is known
 simple = np.array([math.expm1(r["next_ret"]) for r in done])
 series = {}
-for n in NAMES + ["Buy & hold"]:
+for n in NAMES + BENCH:
     a = np.array([1 if n == "Buy & hold" else r["action"][n] for r in done])
     turn = np.abs(np.diff(np.concatenate([[0], a])))
     series[n] = {"action": a, "ret": a * simple - COST * turn, "turn": turn}
@@ -322,7 +340,7 @@ def metrics(n):
             "direction_accuracy": float(((p > 0.5) == (simple > 0)).mean()) if p is not None else float((simple > 0).mean()),
             "yearly": yrs, "equity": [float(v) for v in eq]}
 
-perf = {n: metrics(n) for n in NAMES + ["Buy & hold"]}
+perf = {n: metrics(n) for n in NAMES + BENCH}
 agree = {a: {b: float(np.mean(series[a]["action"] == series[b]["action"])) for b in NAMES} for a in NAMES}
 
 print(f"\nOut-of-sample {dates[0].date()} to {done[-1]['date'].date()} ({len(done)} weeks)")
@@ -343,8 +361,37 @@ why = {
     "Jev (System One)": f"Regime: {d['regime']}.",
     "Mini LLM tape reader": f"Wrote 256 possible next weeks from the last 64 days; average {d['llm_mean']:+.2%}. "
                             f"Last 14 days as text: '{d['tape']}' (a = big down day, g = big up day); surprise {d['llm_surprise']:.2f} bits/day.",
-    "Panel chair (consensus)": f"{d['n_long']} of 5 experts LONG, {d['n_short']} SHORT; needs 3 to act.",
+    "Phantom Flow": (lambda q: f"Shift {'up' if q['shift'] > 0 else 'down'} (stop ${q['stop']:,.0f}), structure "
+                     f"{ {1: 'bullish', -1: 'bearish', 0: 'none yet'}[q['structure']] }, oscillator {q['osc']:+.2f} ATR; "
+                     f"confluence {q['score']:+d} of 3.")(d["pf"]),
+    "Panel chair (consensus)": f"{d['n_long']} of 6 experts LONG, {d['n_short']} SHORT; needs 3 and a majority of those taking a side.",
 }
+# ---- Phantom Flow: daily series for the dashboard + parameter sensitivity (reported, not used to choose) ----
+pfd = PF.loc[dates[0]:]
+pf_daily = {"dates": [str(x.date()) for x in pfd.index], "close": [round(float(v), 2) for v in pfd.close],
+            "stop": [round(float(v), 2) for v in pfd.stop], "shift": [int(v) for v in pfd["shift"]],
+            "structure": [int(v) for v in pfd.structure], "osc": [round(float(v), 3) for v in pfd.osc],
+            "call": [int(v) for v in pfd.call], "events": [[str(x.date()), e] for x, e in pfd.event.items() if e]}
+pf_sens = []
+for mult in (2.0, 3.0, 4.0):
+    for piv in (3, 5, 10):
+        alt = phantom_flow.compute(day.PriceUSD, mult=mult, pivot=piv)
+        a = np.array([int(alt.loc[:r["date"]].iloc[-1].call) for r in done])
+        ret = a * simple - COST * np.abs(np.diff(np.concatenate([[0], a])))
+        eq = np.cumprod(1 + ret)
+        ch = []                                                   # the 6-expert chair with this Phantom Flow setting
+        for r, x in zip(done, a):
+            v = [r["action"][e] for e in EXPERTS[:5]] + [int(x)]
+            nl, ns = v.count(1), v.count(-1)
+            ch.append(1 if (nl >= 3 and nl > ns) else -1 if (ns >= 3 and ns > nl) else 0)
+        ch = np.array(ch); cret = ch * simple - COST * np.abs(np.diff(np.concatenate([[0], ch])))
+        pf_sens.append({"mult": mult, "pivot": piv, "sharpe": float(ret.mean() / ret.std(ddof=1) * math.sqrt(52)),
+                        "chair_sharpe": float(cret.mean() / cret.std(ddof=1) * math.sqrt(52)),
+                        "chair_max_drawdown": float((np.cumprod(1 + cret) / np.maximum.accumulate(np.cumprod(1 + cret)) - 1).min()),
+                        "total_return": float(eq[-1] - 1), "max_drawdown": float((eq / np.maximum.accumulate(eq) - 1).min()),
+                        "default": mult == phantom_flow.DEFAULTS["mult"] and piv == phantom_flow.DEFAULTS["pivot"]})
+print("\nPhantom Flow sensitivity, Sharpe alone / chair:", ", ".join(f"x{s['mult']:.0f}/p{s['pivot']}={s['sharpe']:.2f}/{s['chair_sharpe']:.2f}" for s in pf_sens))
+
 latest = {n: {"action": LBL[last["action"][n]], "p_up": last["p"][n], "why": why[n]} for n in NAMES}
 print(f"\nCall for the week after {last['date'].date()} (BTC ${last['price']:,.0f}):")
 for n, v in latest.items():
@@ -359,14 +406,19 @@ result = {"generated": time.strftime("%Y-%m-%d"), "decision_model": jev.name, "a
           "action": {n: [int(r["action"][n]) for r in rows] for n in NAMES},
           "regime": [r["detail"]["regime"] for r in rows],
           "llm_surprise": [float(r["detail"]["llm_surprise"]) for r in rows],
+          "benchmarks": BENCH, "old_chair": {"action": [int(r["action"][OLD_CHAIR]) for r in rows], "p": [float(r["p"][OLD_CHAIR]) for r in rows]},
+          "phantom_flow": pf_daily, "pf_sensitivity": pf_sens, "pf_params": phantom_flow.DEFAULTS,
           "perf": perf, "agreement": agree, "latest": latest,
           "sources": {"Coin Metrics community data (CC BY-NC 4.0)": SOURCES["btc.csv"],
                       "CBOE VIX via datasets/finance-vix": SOURCES["vix.csv"]}}
 json.dump(result, open(OUT / "panel_results.json", "w"), indent=1, default=float)
 pd.DataFrame({"date": result["dates"], "price": result["price"],
               **{f"{n} action": result["action"][n] for n in NAMES}, **{f"{n} P(up)": result["p"][n] for n in NAMES},
+              f"{OLD_CHAIR} action": result["old_chair"]["action"],
               "Jev regime": result["regime"]}).to_csv(OUT / "weekly_signals.csv", index=False)
 pd.DataFrame({n: {k: v for k, v in m.items() if k not in ("equity", "yearly")} for n, m in perf.items()}).T.to_csv(OUT / "performance_summary.csv")
 pd.DataFrame({n: m["yearly"] for n, m in perf.items()}).T.to_csv(OUT / "yearly_returns.csv")
+PF.loc["2019-01-01":].to_csv(OUT / "phantom_flow_daily.csv")
+pd.DataFrame(pf_sens).to_csv(OUT / "phantom_flow_sensitivity.csv", index=False)
 wk[FEATURES + ["price", "next_ret"]].to_csv(OUT / "weekly_features.csv")
 print(f"\nSaved panel_results.json, weekly_signals.csv, performance_summary.csv, yearly_returns.csv, weekly_features.csv to {OUT}")
