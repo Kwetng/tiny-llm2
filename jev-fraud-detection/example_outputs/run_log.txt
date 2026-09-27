@@ -1,0 +1,280 @@
+Transactions: 24000 (341 fraud, 1.42%) | train 14400 | test 9600
+  fraud by type: {'card_fraud': 115, 'account_takeover': 109, 'app_scam': 117}
+
+[MINI LLM] learning normal payment descriptions (0.35M params, 40000 descriptions, 1200 steps)
+  done in 69s
+  mean surprise (bits/char): genuine 1.04 | card_fraud 2.39 | account_takeover 1.99 | app_scam 4.07
+  latency: 1.1 ms per single transaction on CPU
+
+[JEV] decision model: LOCAL STAND-IN (not Jev) - set TYPESAFE_API_KEY to use the real model
+  scored 24000 transactions in 1.0s, 0 input tokens
+
+[RANKING POWER on 9600 test transactions, 144 fraud]
+  Score                               PR-AUC  ROC-AUC  Recall @2% alerts
+  Local stand-in (zero labels)         0.611    0.965              62.5%
+  Challenger, no LLM                   0.839    0.996              84.0%
+  Challenger + mini LLM surprise       0.960    0.999              94.4%
+  Ensemble (Jev + challenger)          0.952    0.998              93.8%
+  Mini LLM surprise on its own         0.363    0.779              36.8%
+  (fraud base rate 1.50% - a random score has PR-AUC ~0.015)
+
+  Calibration of the decision model:  bucket | n | mean predicted | actual fraud rate
+    0%-5%       7566     3.1%     0.1%
+    5%-20%      1803     8.6%     2.5%
+    20%-50%      194    29.9%    30.9%
+    50%-80%       33    65.2%    90.9%
+    80%-100%       4    84.5%   100.0%
+
+[BUSINESS OUTCOME on the test set - fraud value £92,391]
+  Design                                              Fraud lost  Friction     Total  Genuine interrupted
+  No controls                                        £   92,391 £      0 £ 92,391          0 (0 blocked)
+  Rules only                                         £   29,232 £  1,100 £ 30,332        181 (1 blocked)
+  Jev only                                           £   13,836 £    474 £ 14,311        287 (4 blocked)
+  Challenger only (no LLM)                           £   15,872 £    302 £ 16,174        284 (2 blocked)
+  Challenger + mini LLM                              £   10,078 £    190 £ 10,269        298 (1 blocked)
+  Full design: Jev + challenger + mini LLM + rules   £    7,884 £    177 £  8,061        260 (1 blocked)
+  Full design - share of fraud stopped by type: card_fraud 88%, account_takeover 99%, app_scam 82%
+  Full design - actions: ALLOW 9201, STEP-UP 266, HOLD 75, BLOCK 58
+  Full design - genuine by action: ALLOW 9196, STEP-UP 254, HOLD 5, BLOCK 1 | fraud by action: ALLOW 5, STEP-UP 12, HOLD 70, BLOCK 57
+
+==============================================================================
+# Fraud case — transaction 12033
+
+**Action:** HOLD  
+**Truth (synthetic label, unknown to the system):** genuine
+
+## Scores
+
+| Signal | Value |
+|---|---|
+| Jev P(fraud) | 64.7% |
+| Jev fraud type | account takeover |
+| Challenger P(fraud) (trees + mini LLM) | 31.5% |
+| Combined risk | 48.1% (STEP-UP ≥ 8.1%, HOLD ≥ 32.5%, BLOCK ≥ 73.5%) |
+| Mini LLM surprise | 0.65 bits/char (rarer than 14.4% of normal descriptions) |
+
+## Transaction
+
+| Field | Value |
+|---|---|
+| Amount | £846.55 |
+| Channel | faster_payment |
+| Description | HOUSE DEPOSIT |
+| Local time | 00:56 |
+
+## Reason codes (deterministic)
+
+- New device for this customer
+- Payment 2 minutes after login
+- Amount is 33x the customer's median (£26)
+- First payment to this payee or merchant
+- Unusual time for this customer (00:56)
+
+## Overrides applied
+
+- None
+
+**Analyst decision:** _pending_
+
+
+==============================================================================
+# Fraud case — transaction 11935
+
+**Action:** STEP-UP  
+**Truth (synthetic label, unknown to the system):** app_scam
+
+## Scores
+
+| Signal | Value |
+|---|---|
+| Jev P(fraud) | 15.8% |
+| Jev fraud type | genuine |
+| Challenger P(fraud) (trees + mini LLM) | 32.8% |
+| Combined risk | 24.3% (STEP-UP ≥ 8.1%, HOLD ≥ 32.5%, BLOCK ≥ 73.5%) |
+| Mini LLM surprise | 0.44 bits/char (rarer than 4.4% of normal descriptions) |
+
+## Transaction
+
+| Field | Value |
+|---|---|
+| Amount | £248.87 |
+| Channel | faster_payment |
+| Description | HOLIDAY VILLA BOOKING |
+| Local time | 14:44 |
+
+## Reason codes (deterministic)
+
+- Amount is 17x the customer's median (£14)
+- First payment to this payee or merchant
+- Payee account opened 17 days ago
+
+## Overrides applied
+
+- None
+
+## Message shown to the customer (fixed template)
+
+> Stop - this could be a scam. Your bank, HMRC and the police will never ask you to move money to a 'safe account' or pay a fee to release funds. If someone is telling you what to do, hang up and call us on the number on your card.
+
+**Analyst decision:** _pending_
+
+
+==============================================================================
+# Fraud case — transaction 23370
+
+**Action:** BLOCK  
+**Truth (synthetic label, unknown to the system):** app_scam
+
+## Scores
+
+| Signal | Value |
+|---|---|
+| Jev P(fraud) | 63.9% |
+| Jev fraud type | authorised push payment scam |
+| Challenger P(fraud) (trees + mini LLM) | 99.0% |
+| Combined risk | 81.5% (STEP-UP ≥ 8.1%, HOLD ≥ 32.5%, BLOCK ≥ 73.5%) |
+| Mini LLM surprise | 6.18 bits/char (rarer than every normal description sampled) |
+
+## Transaction
+
+| Field | Value |
+|---|---|
+| Amount | £842.28 |
+| Channel | faster_payment |
+| Description | SAFE ACCOUNT TRANSFER |
+| Local time | 11:55 |
+
+## Reason codes (deterministic)
+
+- Payment 5 minutes after login
+- Amount is 49x the customer's median (£17)
+- First payment to this payee or merchant
+- Payee account opened 46 days ago
+- Description unlike normal payments (mini LLM surprise 6.2 bits/char, rarer than every normal description sampled)
+
+## Overrides applied
+
+- None
+
+**Analyst decision:** _pending_
+
+
+==============================================================================
+# Fraud case — transaction 11053
+
+**Action:** BLOCK  
+**Truth (synthetic label, unknown to the system):** account_takeover
+
+## Scores
+
+| Signal | Value |
+|---|---|
+| Jev P(fraud) | 87.7% |
+| Jev fraud type | account takeover |
+| Challenger P(fraud) (trees + mini LLM) | 99.3% |
+| Combined risk | 93.5% (STEP-UP ≥ 8.1%, HOLD ≥ 32.5%, BLOCK ≥ 73.5%) |
+| Mini LLM surprise | 1.65 bits/char (rarer than 88.2% of normal descriptions) |
+
+## Transaction
+
+| Field | Value |
+|---|---|
+| Amount | £750.28 |
+| Channel | faster_payment |
+| Description | DRINKS LATE |
+| Local time | 22:30 |
+
+## Reason codes (deterministic)
+
+- New device for this customer
+- Password reset in the last 24 hours
+- Payment 5 minutes after login
+- Amount is 20x the customer's median (£37)
+- First payment to this payee or merchant
+- Payee account opened 32 days ago
+- Merchant or payee abroad
+
+## Overrides applied
+
+- None
+
+**Analyst decision:** _pending_
+
+
+==============================================================================
+# Fraud case — transaction 16918
+
+**Action:** BLOCK  
+**Truth (synthetic label, unknown to the system):** card_fraud
+
+## Scores
+
+| Signal | Value |
+|---|---|
+| Jev P(fraud) | 69.2% |
+| Jev fraud type | card fraud (card not present) |
+| Challenger P(fraud) (trees + mini LLM) | 89.4% |
+| Combined risk | 79.3% (STEP-UP ≥ 8.1%, HOLD ≥ 32.5%, BLOCK ≥ 73.5%) |
+| Mini LLM surprise | 0.34 bits/char (rarer than 1.7% of normal descriptions) |
+
+## Transaction
+
+| Field | Value |
+|---|---|
+| Amount | £64.40 |
+| Channel | card_online |
+| Description | ONE4ALL GIFT CARD |
+| Local time | 21:24 |
+
+## Reason codes (deterministic)
+
+- New device for this customer
+- First payment to this payee or merchant
+- 7 transactions in the last hour
+- Unusual time for this customer (21:24)
+
+## Overrides applied
+
+- None
+
+**Analyst decision:** _pending_
+
+
+==============================================================================
+# Fraud case — transaction 6040
+
+**Action:** ALLOW  
+**Truth (synthetic label, unknown to the system):** app_scam
+
+## Scores
+
+| Signal | Value |
+|---|---|
+| Jev P(fraud) | 12.2% |
+| Jev fraud type | genuine |
+| Challenger P(fraud) (trees + mini LLM) | 2.6% |
+| Combined risk | 7.4% (STEP-UP ≥ 8.1%, HOLD ≥ 32.5%, BLOCK ≥ 73.5%) |
+| Mini LLM surprise | 0.48 bits/char (rarer than 8.4% of normal descriptions) |
+
+## Transaction
+
+| Field | Value |
+|---|---|
+| Amount | £1,359.03 |
+| Channel | faster_payment |
+| Description | CAR PURCHASE DEALER |
+| Local time | 12:53 |
+
+## Reason codes (deterministic)
+
+- Amount is 30x the customer's median (£46)
+- First payment to this payee or merchant
+
+## Overrides applied
+
+- None
+
+**Analyst decision:** _pending_
+
+
+Saved case files, audit_log.jsonl, metrics.json, pr_curves.json and model_card.md to ./fraud_outputs/

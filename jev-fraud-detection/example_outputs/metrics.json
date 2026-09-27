@@ -1,0 +1,267 @@
+{
+  "decision_model": "LOCAL STAND-IN (not Jev) - set TYPESAFE_API_KEY to use the real model",
+  "ranking": {
+    "Local stand-in (zero labels)": {
+      "pr_auc": 0.6110196942388774,
+      "roc_auc": 0.9647178011609324,
+      "recall_at_2pct": 0.625
+    },
+    "Challenger, no LLM": {
+      "pr_auc": 0.8387261378343084,
+      "roc_auc": 0.995570125963527,
+      "recall_at_2pct": 0.8402777777777778
+    },
+    "Challenger + mini LLM surprise": {
+      "pr_auc": 0.9603729156489064,
+      "roc_auc": 0.9985359824450084,
+      "recall_at_2pct": 0.9444444444444444
+    },
+    "Ensemble (Jev + challenger)": {
+      "pr_auc": 0.9519203623182244,
+      "roc_auc": 0.9980274135175785,
+      "recall_at_2pct": 0.9375
+    },
+    "Mini LLM surprise on its own": {
+      "pr_auc": 0.362792821401241,
+      "roc_auc": 0.7791859812699755,
+      "recall_at_2pct": 0.3680555555555556
+    }
+  },
+  "calibration": [
+    [
+      "0%-5%",
+      7566,
+      0.03146048936005404,
+      0.0006608511763150939
+    ],
+    [
+      "5%-20%",
+      1803,
+      0.08622038876980094,
+      0.024958402662229616
+    ],
+    [
+      "20%-50%",
+      194,
+      0.2992706195312236,
+      0.30927835051546393
+    ],
+    [
+      "50%-80%",
+      33,
+      0.6524466039254331,
+      0.9090909090909091
+    ],
+    [
+      "80%-100%",
+      4,
+      0.8447516778853887,
+      1.0
+    ]
+  ],
+  "business": {
+    "No controls": {
+      "fraud_loss_gbp": 92391.01000000001,
+      "fraud_prevented_gbp": 0.0,
+      "friction_cost_gbp": 0.0,
+      "total_cost_gbp": 92391.01000000001,
+      "genuine_interrupted": 0,
+      "genuine_blocked": 0,
+      "genuine_by_action": {
+        "ALLOW": 9456,
+        "STEP-UP": 0,
+        "HOLD": 0,
+        "BLOCK": 0
+      },
+      "fraud_by_action": {
+        "ALLOW": 144,
+        "STEP-UP": 0,
+        "HOLD": 0,
+        "BLOCK": 0
+      },
+      "fraud_stopped_share": {
+        "card_fraud": 0.0,
+        "account_takeover": 0.0,
+        "app_scam": 0.0
+      }
+    },
+    "Rules only": {
+      "fraud_loss_gbp": 29232.152500000015,
+      "fraud_prevented_gbp": 63158.85749999999,
+      "friction_cost_gbp": 1100.0,
+      "total_cost_gbp": 30332.152500000015,
+      "genuine_interrupted": 181,
+      "genuine_blocked": 1,
+      "genuine_by_action": {
+        "ALLOW": 9275,
+        "STEP-UP": 0,
+        "HOLD": 180,
+        "BLOCK": 1
+      },
+      "fraud_by_action": {
+        "ALLOW": 91,
+        "STEP-UP": 0,
+        "HOLD": 28,
+        "BLOCK": 25
+      },
+      "fraud_stopped_share": {
+        "card_fraud": 0.0,
+        "account_takeover": 0.5872093023255812,
+        "app_scam": 0.475
+      }
+    },
+    "Jev only": {
+      "fraud_loss_gbp": 13836.152500000006,
+      "fraud_prevented_gbp": 78554.8575,
+      "friction_cost_gbp": 474.5,
+      "total_cost_gbp": 14310.652500000006,
+      "genuine_interrupted": 287,
+      "genuine_blocked": 4,
+      "genuine_by_action": {
+        "ALLOW": 9169,
+        "STEP-UP": 237,
+        "HOLD": 46,
+        "BLOCK": 4
+      },
+      "fraud_by_action": {
+        "ALLOW": 30,
+        "STEP-UP": 26,
+        "HOLD": 38,
+        "BLOCK": 50
+      },
+      "fraud_stopped_share": {
+        "card_fraud": 0.49215686274509807,
+        "account_takeover": 0.9744186046511629,
+        "app_scam": 0.686
+      }
+    },
+    "Challenger only (no LLM)": {
+      "fraud_loss_gbp": 15871.660000000002,
+      "fraud_prevented_gbp": 76519.35000000002,
+      "friction_cost_gbp": 302.0,
+      "total_cost_gbp": 16173.660000000002,
+      "genuine_interrupted": 284,
+      "genuine_blocked": 2,
+      "genuine_by_action": {
+        "ALLOW": 9172,
+        "STEP-UP": 260,
+        "HOLD": 22,
+        "BLOCK": 2
+      },
+      "fraud_by_action": {
+        "ALLOW": 4,
+        "STEP-UP": 31,
+        "HOLD": 36,
+        "BLOCK": 73
+      },
+      "fraud_stopped_share": {
+        "card_fraud": 0.9019607843137256,
+        "account_takeover": 0.9674418604651166,
+        "app_scam": 0.6870000000000002
+      }
+    },
+    "Challenger + mini LLM": {
+      "fraud_loss_gbp": 10078.425499999996,
+      "fraud_prevented_gbp": 82312.5845,
+      "friction_cost_gbp": 190.5,
+      "total_cost_gbp": 10268.925499999996,
+      "genuine_interrupted": 298,
+      "genuine_blocked": 1,
+      "genuine_by_action": {
+        "ALLOW": 9158,
+        "STEP-UP": 293,
+        "HOLD": 4,
+        "BLOCK": 1
+      },
+      "fraud_by_action": {
+        "ALLOW": 2,
+        "STEP-UP": 12,
+        "HOLD": 90,
+        "BLOCK": 40
+      },
+      "fraud_stopped_share": {
+        "card_fraud": 0.898039215686275,
+        "account_takeover": 0.9767441860465118,
+        "app_scam": 0.7980000000000002
+      }
+    },
+    "Full design: Jev + challenger + mini LLM + rules": {
+      "fraud_loss_gbp": 7884.223000000002,
+      "fraud_prevented_gbp": 84506.78700000003,
+      "friction_cost_gbp": 177.0,
+      "total_cost_gbp": 8061.223000000002,
+      "genuine_interrupted": 260,
+      "genuine_blocked": 1,
+      "genuine_by_action": {
+        "ALLOW": 9196,
+        "STEP-UP": 254,
+        "HOLD": 5,
+        "BLOCK": 1
+      },
+      "fraud_by_action": {
+        "ALLOW": 5,
+        "STEP-UP": 12,
+        "HOLD": 70,
+        "BLOCK": 57
+      },
+      "fraud_stopped_share": {
+        "card_fraud": 0.8764705882352946,
+        "account_takeover": 0.9860465116279071,
+        "app_scam": 0.8240000000000001
+      }
+    }
+  },
+  "actions_full_design": {
+    "ALLOW": 9201,
+    "STEP-UP": 266,
+    "HOLD": 75,
+    "BLOCK": 58
+  },
+  "thresholds": {
+    "BLOCK": 0.7352884379930221,
+    "HOLD": 0.32460808708083355,
+    "STEP-UP": 0.08084940639891815
+  },
+  "capacity": {
+    "BLOCK": 0.004,
+    "HOLD": 0.012,
+    "STEP-UP": 0.04
+  },
+  "stop_rates": {
+    "STEP-UP": {
+      "card_fraud": 0.85,
+      "account_takeover": 0.8,
+      "app_scam": 0.35
+    },
+    "HOLD": {
+      "card_fraud": 0.95,
+      "account_takeover": 0.95,
+      "app_scam": 0.75
+    },
+    "BLOCK": {
+      "card_fraud": 1.0,
+      "account_takeover": 1.0,
+      "app_scam": 1.0
+    }
+  },
+  "friction_costs": {
+    "ALLOW": 0.0,
+    "STEP-UP": 0.5,
+    "HOLD": 6.0,
+    "BLOCK": 20.0
+  },
+  "mini_llm_latency_ms": 1.1336612701416016,
+  "versions": {
+    "decision_model": "local-stand-in",
+    "questions": "eb2fba19fcf6",
+    "thresholds": "edd2f10cb404",
+    "mini_llm": "bd4be8e4d883",
+    "challenger": "0f1ecab8f5dd"
+  },
+  "data": {
+    "transactions": 24000,
+    "fraud": 341,
+    "test": 9600,
+    "test_fraud": 144
+  }
+}
