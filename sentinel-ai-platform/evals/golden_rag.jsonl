@@ -1,6 +1,6 @@
 {"id": "G01", "user": "alice", "question": "What leverage is outside the bank's appetite?", "expected": ["CP-001 §3.2"], "must_contain": ["6.0x"]}
 {"id": "G02", "user": "alice", "question": "Who approves an exposure above personal delegated authority?", "expected": ["CP-001 §2.2"], "must_contain": ["EMEA Credit Committee"]}
-{"id": "G03", "user": "carol", "question": "When must an exposure be referred to the Group Credit Committee in Tokyo?", "expected": ["CP-001 §2.3"], "must_contain": ["250 million"]}
+{"id": "G03", "user": "carol", "question": "When must an exposure be referred to the Group Credit Committee at head office?", "expected": ["CP-001 §2.3"], "must_contain": ["250 million"]}
 {"id": "G04", "user": "alice", "question": "What is the minimum interest cover at origination for sub-investment-grade borrowers?", "expected": ["CP-001 §3.3"], "must_contain": ["3.0x"]}
 {"id": "G05", "user": "alice", "question": "What happens to a credit limit that is not reviewed on time?", "expected": ["CP-001 §4.1"], "must_contain": ["suspended"]}
 {"id": "G06", "user": "alice", "question": "When must a client be added to the watchlist?", "expected": ["CP-001 §4.2"], "must_contain": ["5 business days"]}

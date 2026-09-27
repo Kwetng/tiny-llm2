@@ -17,8 +17,8 @@ This policy applies to all credit exposures to corporate clients booked by EMEA 
 Relationship managers may not approve credit. Credit officers hold personal delegated authority up to GBP 25 million per obligor group for investment-grade clients and up to GBP 10 million for sub-investment-grade clients.
 ### 2.2 Credit committee
 Exposures above personal delegated authority, and all exposures to clients rated 7 or worse on the internal rating scale, must be approved by the EMEA Credit Committee, which meets weekly.
-### 2.3 Tokyo referral
-Any single obligor group exposure above GBP 250 million must also be referred to the Group Credit Committee in Tokyo before approval.
+### 2.3 Group referral
+Any single obligor group exposure above GBP 250 million must also be referred to the Group Credit Committee at head office before approval.
 
 ## 3 Financial covenants and leverage
 ### 3.1 Standard covenants

@@ -33,7 +33,7 @@ A = accountable, R = responsible, C = consulted, I = informed.
 
 | Days | Focus | Output in this repository |
 |---|---|---|
-| 1–30 | Listen and map: stakeholders, existing pilots, shadow AI, group policy from Tokyo | Use-case register first draft; control mapping agreed with Model Risk |
+| 1–30 | Listen and map: stakeholders, existing pilots, shadow AI, group policy from head office | Use-case register first draft; control mapping agreed with Model Risk |
 | 31–60 | Design and decide: platform blueprint, RACI, thresholds with Model Risk, two lighthouse use cases | ADRs 0001–0005; `thresholds.yaml` signed off |
 | 61–90 | Deliver: landing zone, gateway, evaluation gate in CI, lighthouse use cases in test | Terraform applied in dev; CI green; first evidence pack to the AI governance forum |
 

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-27 09:13:01",
+  "generated": "2026-09-27 09:24:58",
   "passed": true,
   "guard": "local pattern guard (stand-in, not Jev)",
   "model_route": "policy_qa -> azure-openai-chat > vertex-gemini > local-extractive",
@@ -102,14 +102,14 @@
     {
       "id": "G03",
       "user": "carol",
-      "question": "When must an exposure be referred to the Group Credit Committee in Tokyo?",
+      "question": "When must an exposure be referred to the Group Credit Committee at head office?",
       "should_abstain": false,
       "abstained": false,
       "recall": true,
       "correct": true,
       "citations_ok": true,
       "faithful": true,
-      "answer": "Any single obligor group exposure above GBP 250 million must also be referred to the Group Credit Committee in Tokyo before approval. [CP-001 \u00a72.3]",
+      "answer": "Any single obligor group exposure above GBP 250 million must also be referred to the Group Credit Committee at head office before approval. [CP-001 \u00a72.3]",
       "citations": [
         "CP-001 \u00a72.3"
       ]

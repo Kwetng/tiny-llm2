@@ -206,7 +206,7 @@ python make_dashboard.py      # rebuilds ../dashboard/index.html
 export TYPESAFE_API_KEY=...   # optional: use the real Jev
 ```
 
-# 9. How to use it in an interview
+# 9. How to present it
 
 > "I put models from three of my projects on one committee for Bitcoin and tested them honestly: annual walk-forward retraining, costs included, no look-ahead. I even fixed a test-set leak in my own earlier code. The finding I'd highlight isn't the best single model; it's that a simple 3-of-5 vote kept buy-and-hold's risk-adjusted return while cutting the worst loss from 75% to 41%. I'd also point out the mini LLM's failure: it memorised the past, and its surprise score on new data was a warning sign I could have used to switch it off."
 

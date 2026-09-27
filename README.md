@@ -1,13 +1,17 @@
 # tiny-llm2
 
-Small language models built from scratch, and how to use them alongside Jev (TypeSafe AI's "System One" decision model) in banking.
+Small language models built from scratch, and how to combine them with Jev (TypeSafe AI's "System One" decision model) and governed AI engineering in banking.
 
-| Folder / file | What it is |
+| Folder | What it is |
 |---|---|
-| `tiny_llm.py` | The first TinyLLM: a word-level next-word predictor in a few lines of PyTorch |
-| [`smbc-interview-prep/`](smbc-interview-prep/) | Interview preparation pack for Head of AI Engineering (SMBC EMEA), `mini_gpt.py` (a GPT from scratch), and **Jev + tiny LLM for credit decisions** |
-| [`jev-fraud-detection/`](jev-fraud-detection/) | **Jev + mini LLM for real-time fraud detection** on card payments and bank transfers, with a plain-English guide |
-| [`btc-expert-panel/`](btc-expert-panel/) | **A panel of AI experts on Bitcoin**: models from the quant research and neuroplastic world-model projects, Jev and the mini LLM, backtested walk-forward on real data, with a dashboard |
-| [`sentinel-ai-platform/`](sentinel-ai-platform/) | **A governed GenAI platform for a bank**: AI gateway, entitlement-aware RAG, CSA extraction, controlled agent, evaluation gate, monitoring, Azure and GCP Terraform, and an SS1/23 evidence pack |
+| [`sentinel-ai-platform/`](sentinel-ai-platform/) | **A governed GenAI platform for a bank**: AI gateway, entitlement-aware RAG with information barriers, CSA extraction, controlled agent, a release gate with 12 thresholds, drift monitoring, Azure and GCP Terraform, and an automatic model-risk evidence pack |
+| [`jev-fraud-detection/`](jev-fraud-detection/) | **Jev + mini LLM for real-time fraud detection** on card payments and bank transfers |
+| [`jev-credit-decisions/`](jev-credit-decisions/) | **Jev + mini LLM for credit decision support**: probability of repayment, policy rules, challenger model and audit log |
+| [`btc-expert-panel/`](btc-expert-panel/) | **A panel of AI experts on Bitcoin**: quant research models, the neuroplastic world model, Jev and the mini LLM, backtested walk-forward on real data, with a dashboard |
+| [`mini-gpt/`](mini-gpt/) | **A GPT built from scratch** in about 170 lines of PyTorch, used by the projects above |
+| `tiny_llm.py` | The first TinyLLM: a word-level next-word predictor |
+| `tools/` | Builds the Word guides from Markdown |
 
-All data in this repository is synthetic, and the code is for learning, not production use. Where the Jev API was not reachable, the pipelines use a clearly labelled offline stand-in that is **not Jev**. Set `TYPESAFE_API_KEY` to run them against the real model.
+Each project has a README and a plain-English guide (Markdown and Word).
+
+All data is synthetic except the Bitcoin panel, which uses Coin Metrics community data (CC BY-NC 4.0). Where the Jev API was not reachable, the pipelines use a clearly labelled offline stand-in that is **not Jev**. Set `TYPESAFE_API_KEY` to run them against the real model. The code is for learning and demonstration, not production use.

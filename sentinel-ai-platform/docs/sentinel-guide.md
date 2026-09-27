@@ -269,7 +269,7 @@ The CI pipeline runs these steps on every change:
 
 ![Figure 2 — How a new use case reaches production](img/path_to_production.png)
 
-# 10. What to say in the interview
+# 10. How to present it in two minutes
 
 > "This is the platform I would build in my first six months. Every AI use case plugs into one governed gateway, so security, audit and Model Risk evidence come built in rather than bolted on. The release gate blocks any change that leaks restricted data, fails to cite its sources or lets an attack through. It proved its worth on day one by catching an answer that quoted the wrong policy. It runs on Azure and Google Cloud with private networking and bank-held keys, and it produces the SS1/23 evidence pack automatically."
 

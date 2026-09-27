@@ -11,7 +11,7 @@ credit_jev_llm.py - credit decision support with Jev (System One) + a tiny LLM (
   Decision engine   : deterministic policy rules + PD bands + challenger check
                       -> a RECOMMENDATION; the credit committee decides.
 
-Principles (from the SMBC prep pack):
+Principles:
   - Numbers come from source data and the decision model, never from LLM text.
   - The LLM only drafts narrative; a human owns the decision.
   - Jev's calibration claim is VALIDATED on our own data, not taken on trust.

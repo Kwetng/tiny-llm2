@@ -1,6 +1,6 @@
 # Jev + mini LLM: real-time fraud detection for banking transactions
 
-This folder shows how to use **Jev**, TypeSafe AI's "System One" decision model, together with the **mini LLM** (the character-level GPT from `smbc-interview-prep/code/mini_gpt.py`) to catch fraudulent card payments and bank transfers. Each transaction ends in one of four actions: **ALLOW, STEP-UP, HOLD or BLOCK**.
+This folder shows how to use **Jev**, TypeSafe AI's "System One" decision model, together with the **mini LLM** (the character-level GPT from `mini-gpt/mini_gpt.py`) to catch fraudulent card payments and bank transfers. Each transaction ends in one of four actions: **ALLOW, STEP-UP, HOLD or BLOCK**.
 
 A spam filter answers *"is this email spam?"* with a probability. Here, Jev answers *"is this transaction fraud or a scam?"* in the same way. The mini LLM adds something Jev's behavioural signals miss: it has read thousands of normal payment descriptions, so it notices when one looks nothing like normal banking text, such as *SAFE ACCOUNT TRANSFER*.
 
@@ -83,9 +83,9 @@ Outputs go to `code/fraud_outputs/`. To rebuild the figures, copy that folder to
 
 The environment that built this could not reach `api.typesafe.ai`. Every "Jev" result above comes from `LocalFraudStandIn`, a hand-written rule model with Jev's response format. It is **not Jev**, and its results say nothing about Jev's real accuracy. Set `TYPESAFE_API_KEY` and re-run: the same validation, cost analysis and case files will then reflect the real model. Jev's public benchmark is spam detection, so its performance on fraud has to be proven on the bank's own data.
 
-## Design choices worth defending in an interview
+## Design choices worth highlighting
 
-- **The LLM is a detector, not a writer.** The credit demo in `smbc-interview-prep` showed a tiny LLM inventing facts. Here, every customer message and reason code is a fixed template, and the LLM only produces a number.
+- **The LLM is a detector, not a writer.** The credit demo in `jev-credit-decisions` showed a tiny LLM inventing facts. Here, every customer message and reason code is a fixed template, and the LLM only produces a number.
 - **Zero-label model, validated with labels.** Jev needs no training data, which helps with brand-new fraud patterns. Its probabilities are still checked against confirmed outcomes. The stand-in over-predicted fraud at the low end: 3.1% predicted against 0.1% actual.
 - **Cut-offs sized to capacity.** Thresholds are set by how many STEP-UPs, HOLDs and BLOCKs the customers and analysts can absorb, not by an arbitrary 50% line.
 - **Overrides only raise an action.** A model can never release a payment that the mule list or card-testing rule would stop.

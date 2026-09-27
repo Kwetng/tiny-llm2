@@ -343,7 +343,7 @@ The same tests, cost analysis and case files will then show how the real Jev per
 - **UK model risk (PRA SS1/23):** a material fraud model still falls under model risk management — inventory, independent validation, monitoring and change control. So do data-protection rules.
 - **UK APP scams:** mandatory reimbursement, up to £85,000 per claim since October 2024, makes stopping APP scams a direct financial priority.
 
-# 8. How to explain it in the interview (30 seconds)
+# 8. How to explain it in 30 seconds
 
 > "I treat fraud screening as a fast System One decision. Jev reads each transaction as structured data and returns a calibrated fraud probability and fraud type in one call, with no training labels. The mini LLM — which I built from scratch — never writes anything: it's trained only on normal payment descriptions and scores how surprising a new one is, in about a millisecond. On its own that's a weak detector, but as one extra signal it lifted our challenger's PR-AUC from 0.84 to 0.96, mostly by catching APP-scam wording like 'safe account transfer'. The decision engine sizes STEP-UP, HOLD and BLOCK to team capacity, and hard rules can only make actions stricter. Every decision is logged with model versions. And I'm honest about what it misses: well-disguised purchase scams."
 

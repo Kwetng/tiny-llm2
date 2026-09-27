@@ -314,7 +314,7 @@ The same validation then runs on Jev's real answers. Whether Jev beats the chall
 
 **Regulatory note.** Lending to companies is outside the EU AI Act's "high-risk" list, which covers credit decisions about *individuals*. A version of this model used for personal loans would be high-risk and need much stronger controls. In the UK, the model falls under PRA SS1/23 model risk management either way.
 
-# 8. How to explain it in the interview (30 seconds)
+# 8. How to explain it in 30 seconds
 
 > "Jev is a new type of model — a decision model rather than a text generator. You give it data and a precise question, like 'will this borrower meet every payment for twelve months?', and it returns a calibrated probability. I use it as the fast System One judgement, then wrap it in controls: fixed policy limits, a challenger scorecard, and an automatic refer when they disagree. A tiny LLM drafts the memo narrative but never produces a number. Every recommendation is logged with model versions, and the credit committee decides. Crucially, I validate the calibration on our own portfolio before trusting it — in my test, the stand-in ranked well but overstated risk at the top, which is exactly the kind of thing validation must catch."
 
@@ -342,4 +342,4 @@ The same validation then runs on Jev's real answers. Whether Jev beats the chall
 - Simon Willison, "Jev introduces a new shape of LLM" (21 September 2026) — simonwillison.net/2026/Sep/21/jev/
 - Jev AI, "Jev: the System One model for fast, calibrated AI decisions" — jevai.net/articles/what-is-system-one-jev/
 - P. Niessen, "jev-test" benchmark (API request format and spam results) — github.com/pniessen/jev-test
-- Code for this guide: `credit_jev_llm.py` and `jev_client.py` in the `smbc-interview-prep/code` folder
+- Code for this guide: `credit_jev_llm.py` and `jev_client.py` in the `jev-credit-decisions/code` folder

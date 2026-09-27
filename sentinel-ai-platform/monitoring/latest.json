@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-27 09:07:09",
+  "generated": "2026-09-27 09:25:00",
   "metrics": {
     "requests": 200,
     "blocked": 9,
@@ -8,8 +8,8 @@
     "grounding_failure_rate": 0.0,
     "quarantine_events": 22,
     "pii_redactions": 0,
-    "latency_p50_ms": 4.9,
-    "latency_p95_ms": 5.9,
+    "latency_p50_ms": 4.7,
+    "latency_p95_ms": 5.8,
     "model_mix": {
       "local-extractive": 191
     },

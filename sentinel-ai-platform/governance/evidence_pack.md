@@ -1,6 +1,6 @@
 # Model risk evidence pack
 
-Generated 2026-09-27 09:11 from commit `d3fdc86`. This file is produced automatically by CI; do not edit by hand.
+Generated 2026-09-27 09:25 from commit `e01da3f`. This file is produced automatically by CI; do not edit by hand.
 
 ## 1. Identification and classification (SS1/23 principle 1)
 
@@ -28,7 +28,7 @@ Under GR-002 §1.1 the model is the whole system. Its versioned components:
 
 ## 3. Validation evidence (principle 4)
 
-Latest evaluation: **PASSED** at 2026-09-27 09:11:07 (21 answerable and 8 must-refuse questions, 12 red-team prompts, 18 extraction fields).
+Latest evaluation: **PASSED** at 2026-09-27 09:24:58 (21 answerable and 8 must-refuse questions, 12 red-team prompts, 18 extraction fields).
 
 | Metric | Value | Threshold | Result |
 |---|---|---|---|
@@ -54,7 +54,7 @@ Guard in use: local pattern guard (stand-in, not Jev). Audit chain intact during
 
 ## 4. Ongoing monitoring (principle 4)
 
-Latest monitoring run 2026-09-27 09:07:09: 200 requests, block rate 4.5%, abstention 24.1%, grounding failures 0.0%, p95 latency 5.9 ms.
+Latest monitoring run 2026-09-27 09:25:00: 200 requests, block rate 4.5%, abstention 24.1%, grounding failures 0.0%, p95 latency 5.8 ms.
 
 Alerts:
 - Input drift in requests 151-191: similarity to the reference set 0.52 (below 0.6); abstention 53.7%

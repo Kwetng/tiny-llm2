@@ -1,4 +1,4 @@
-# Monitoring report - 2026-09-27 09:07:09
+# Monitoring report - 2026-09-27 09:25:00
 
 Audit chain intact: **True** (200 records)
 
@@ -22,7 +22,7 @@ Audit chain intact: **True** (200 records)
 
 | Measure | Value |
 |---|---|
-| Latency p50 / p95 | 4.9 / 5.9 ms |
+| Latency p50 / p95 | 4.7 / 5.8 ms |
 | Model mix | {'local-extractive': 191} |
 | Cost by business line (GBP) | {'group': 0.0, 'corporate_banking': 0.0, 'capital_markets': 0.0} |
 
