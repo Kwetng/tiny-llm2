@@ -1,5 +1,5 @@
 \title BTC Expert Panel
-\subtitle A plain-English guide to seven experts — six models, one market — calling Bitcoin's next week
+\subtitle A plain-English guide to nine experts in five families, calling Bitcoin's next week
 \subtitle Walk-forward results on real data, January 2020 – May 2026
 
 \pagebreak
@@ -20,12 +20,14 @@ This project builds that committee for **Bitcoin**, using AI models from three o
 - **The mini LLM**, built from scratch, reading the market's daily moves as if they were text.
 - **Phantom Flow:** a technical indicator that combines a trend filter, market structure and momentum. This is an open re-implementation of the paid TradingView indicator (see section 3.6).
 - **The market itself:** not a model at all, but the price of Bitcoin prediction-market contracts — what thousands of people are actually paying (see section 3.7).
+- **A chart JEPA:** the technical-analysis seat. It draws the last year as a picture and predicts the next piece of chart, in meaning rather than in pixels (see section 3.8).
+- **On-chain fundamentals:** the only seat that never looks at the price chart, asking instead what the blockchain says Bitcoin is worth (see section 3.9).
 
 Every Sunday, each expert says whether Bitcoin will be **higher in 7 days**. A **panel chair** then acts only if at least 3 agree and they outnumber those on the other side.
 
 Everything is tested **walk-forward**. Each January the models are retrained using only data from before that year, then used unchanged for the whole year, so no model ever sees the future. The test runs from January 2020 to May 2026: 332 weeks.
 
-> **In one sentence:** seven different experts vote on Bitcoin each week. On its own none beats simply holding Bitcoin by much. The five-expert committee matched buy-and-hold's risk-adjusted return with roughly half the worst loss, and adding Phantom Flow lifted it further, though that gain may be luck (section 5).
+> **In one sentence:** nine different experts vote on Bitcoin each week. On its own none beats simply holding Bitcoin by much. The five-expert committee matched buy-and-hold's risk-adjusted return with roughly half the worst loss, and adding Phantom Flow lifted it further, though that gain may be luck (section 5).
 
 ![Figure 1 — The dashboard: latest verdict and each expert's call](img/docs_img_top.png)
 
@@ -164,11 +166,78 @@ Both legs are the same distance from today's price, on the same expiry, in the s
 
 **The honest limitation, and it is a big one.** Liquid Bitcoin prediction markets are recent. The panel's history starts in January 2020; these markets barely existed before 2024. So this seat abstains for most of the backtest, and it is judged only on the weeks it actually covered (section 5). Any claim about its record over the full 332 weeks would be meaningless.
 
-## 3.8 The panel chair
+## 3.8 Chart JEPA (technical analysis)
+
+**The idea in one line:** draw the chart as a picture, and learn to predict what the next piece of it will *mean* rather than what it will look like.
+
+**What a JEPA is.** A **Joint Embedding Predictive Architecture** is Yann LeCun's proposal for how a model should learn about the world. Hide part of the input; ask the model to predict the hidden part — but judge it on a compressed summary (an **embedding**) of that hidden part, not on the raw thing itself.
+
+Why that matters here: most of a price chart is noise. A model forced to reproduce every wiggle spends all its effort on detail that was never predictable. Predicting the *meaning* lets it keep only what can actually be known. It is the difference between asking a chartist "draw me next month's candles" and asking "is this topping out or consolidating?".
+
+**How the chart becomes a picture.**
+
+| Step | What happens |
+|---|---|
+| 1 | Take the last **52 weekly closes** |
+| 2 | Draw them on a **24-row by 52-column** grid, joining the dots so it is a line, not scattered points |
+| 3 | Scale the window to **its own high and low** |
+
+Step 3 is the important one. Because the picture is scaled to itself, the same pattern looks identical at $300 and at $60,000. The model can only see **shape**, never price level — which is what technical analysis claims to read, and which also stops it memorising "2021 was expensive". A test checks this: multiplying every price by 200 must produce a byte-identical picture.
+
+**How it learns.** The picture is cut into 13 vertical strips of 4 weeks. The model sees the first 10 and must predict the embeddings of the last 3. A second copy of the encoder, updated as a slow moving average of the first, produces the answers it is scored against — the standard trick for stopping this kind of model cheating.
+
+**How it votes.** The predictor is run one strip *past* the end of the chart, giving a predicted embedding of four weeks that have not happened. A small logistic regression turns that into P(up next week).
+
+**The failure mode, and why it is measured.** A JEPA can cheat by mapping every chart to the same point: its predictions become perfect and completely useless. The guard against it is a term that forces the embeddings to keep some spread, and the check is the **embedding spread** printed on every run and shown on the dashboard. Near zero would mean the model had collapsed and the seat should be ignored. It is reported whatever it says.
+
+**Honest limits.**
+
+- About 650 weekly charts is a very small dataset for this kind of model. It is deliberately tiny — roughly 15,000 parameters — and is still the most overfit-prone seat.
+- Rendering a series as a picture cannot add information that was not in the series. The only claim is that the grid emphasises shape over level.
+- The panel already has a latent-dynamics model (the neuroplastic world model), so the two could agree for the wrong reasons. The agreement table is the check.
+
+## 3.9 Fundamentals (on-chain valuation)
+
+**The problem:** a share has earnings; Bitcoin has none. So "fundamental analysis" here means reading the **blockchain itself** — what holders paid, what miners earn, how secure the network is, and how many people use it.
+
+**The four measures:**
+
+| Measure | The question it asks | Reads high when |
+|---|---|---|
+| **MVRV** | Is the price far above what holders actually paid? | Holders are sitting on large gains — historically a cycle top |
+| **Puell multiple** | Are miners unusually rich or squeezed? | Miners are earning far above normal and tend to sell into it |
+| **Hash ribbon** | Is network security growing or shrinking? | Miners are switching machines on, not off |
+| **Metcalfe residual** | Is the price ahead of adoption? | Price has run ahead of the number of people using the network |
+
+**MVRV** is worth a sentence on its own. Every coin can be priced at the moment it last moved, which gives the market's true average cost basis. MVRV is today's value divided by that. An MVRV of 3 means the average coin is sitting on a 200% gain — historically the zone where people start selling.
+
+**Metcalfe's law** says a network is worth roughly the square of its users. Fitting market cap against active addresses gives a fair value from usage alone, and the gap is how far price sits above it. On this data the fitted exponent comes out near 2, which is Metcalfe's square law almost exactly.
+
+**A scaling bug worth recording.** The first version of this seat standardised each measure against the training period. Because Bitcoin's market cap grew roughly a thousandfold, that produced readings like *"13 standard deviations cheap"* — pure arithmetic, no signal. The fix is to score each measure against **its own previous four years**, a window that moves forward with the data. It still looks forward at nothing, and it stays on a sensible scale for ever.
+
+**How it votes.** Each measure is signed so positive always means "cheap or improving", and the four are averaged. The seat acts only when that average passes **±0.5** — when valuation is genuinely unusual, not marginally tilted. That threshold was chosen to match the other seats' activity levels (about half of all weeks), fixed before any return was measured.
+
+**The honest caveat, and it is the important one.** Fundamentals are **slow**. "Bitcoin is expensive against its cost basis" is a statement about the next few months, not the next seven days. As a weekly signal this seat is expected to be weak and to change its mind rarely. Out of sample it says "expensive" far more often than "cheap", which is the familiar weakness of valuation timing during a bull market. Its value to a committee is not accuracy but **independence**: its mistakes are not the momentum models' mistakes.
+
+## 3.10 The panel chair
 
 **What it is:** a simple rule. LONG if at least 3 experts say LONG and they outnumber those saying SHORT. SHORT is the mirror image; otherwise FLAT.
 
-Because an abstaining expert changes neither count, a week where the market seat is silent gives exactly the answer the six-expert panel would have given. That makes the comparison clean, and the dashboard keeps both earlier chairs — "Chair without Phantom Flow" (3 of 5) and "Chair without the market" (3 of 6) — so you can see what each new seat added.
+Because an abstaining expert changes neither count, a week where the market seat is silent gives exactly the answer the smaller panel would have given. The dashboard keeps every earlier chair — 5 experts, 6, and 7 — so you can see what each new seat actually added.
+
+**One thing to watch as the panel grows.** "At least 3" meant half the panel when there were six experts. With nine it means a third, which is a looser bar. The second condition — that those agreeing must *outnumber* those on the other side — is what stops it becoming trigger-happy, and it is doing more of the work now than it used to. The rule was fixed in advance and has been left alone, but the earlier chairs are on the same chart so the effect of the change is visible rather than hidden.
+
+**The five families.** With nine seats it helps to group them by *how* they think, because experts that reason the same way tend to fail together:
+
+| Family | Seats | How it reasons |
+|---|---|---|
+| Learned from price history | Random Forest, Tabular Transformer | Statistical patterns in 12 weekly inputs |
+| Decision and language models | Jev, Mini LLM tape reader | Reads the situation as structured data or as text |
+| Latent world models | Neuroplastic World Model, Chart JEPA | Compresses the world to a few numbers and predicts how they move |
+| Technical indicator | Phantom Flow | Fixed rules on trend, structure and momentum |
+| Outside views | Market consensus, Fundamentals | Ignores the models: what others pay, and what the chain is worth |
+
+A committee is only worth having if its members are wrong at different times, so the dashboard colours experts by family and the agreement table shows whether the independence is real.
 
 **Latest call:** FLAT. Two experts said LONG (Jev and the mini LLM), four said FLAT, none said SHORT.
 
@@ -185,7 +254,9 @@ The latest call was for the week after **17 May 2026**, with Bitcoin at **$77,49
 | Mini LLM | 79% | LONG | 203 of 256 imagined weeks ended higher |
 | Phantom Flow | score −1 | FLAT | Trend down, oscillator negative, structure still bullish |
 | Market consensus | — | FLAT | **Abstained:** no prediction-market data was fetched for this run (section 5) |
-| **Panel chair** | — | **FLAT** | Only 2 LONG; needs 3 |
+| Chart JEPA | see section 5 | see section 5 | Predicted the embedding of the next four weeks of chart |
+| Fundamentals | see section 5 | see section 5 | Valuation score against its own four-year norm |
+| **Panel chair** | — | **FLAT** | Needs 3 agreeing and a majority of those taking a side |
 
 The committee stays out of the market. The two confident experts are the stand-in rule and the model that memorised the past, which is exactly the kind of situation where waiting for broader agreement protects you.
 
@@ -207,15 +278,19 @@ The committee stays out of the market. The two confident experts are the stand-i
 
 | Expert | Total return | CAGR | Sharpe | Max drawdown | Hit rate | Time long / short |
 |---|---|---|---|---|---|---|
-| Neuroplastic World Model | +1,161% | 48.7% | **1.13** | −50% | 53.6% | 45% / 8% |
-| **Panel chair (6 experts)** | +1,111% | 47.8% | 1.05 | −43% | 56.9% | 49% / 23% |
-| Jev (stand-in) | +863% | 42.6% | 0.94 | −45% | 52.5% | 53% / 26% |
-| Chair without Phantom Flow | +671% | 37.7% | 0.93 | **−41%** | **57.6%** | 45% / 14% |
+| **Panel chair (9 experts)** | **+2,103%** | 62.3% | **1.21** | −45% | 57.5% | 50% / 28% |
+| Neuroplastic World Model | +1,161% | 48.7% | 1.13 | −50% | 53.6% | 45% / 8% |
+| Chair with 7 experts | +1,111% | 47.8% | 1.05 | −43% | 56.9% | 49% / 23% |
 | Buy & hold | +954% | 44.6% | 0.93 | −75% | 52.1% | 100% / 0% |
+| Jev (stand-in) | +863% | 42.6% | 0.94 | −45% | 52.5% | 53% / 26% |
+| Chair with 5 experts | +671% | 37.7% | 0.93 | **−41%** | **57.6%** | 45% / 14% |
 | Phantom Flow | +191% | 18.2% | 0.58 | −58% | 49.4% | 38% / 33% |
 | Mini LLM | +171% | 16.9% | 0.56 | −77% | 54.8% | 46% / 39% |
 | Random Forest | +122% | 13.3% | 0.50 | −51% | 53.7% | 47% / 14% |
 | Tabular Transformer | +103% | 11.8% | 0.48 | −75% | 56.0% | 49% / 39% |
+| Chart JEPA | +4% | 0.6% | 0.16 | −51% | 48.3% | 11% / 6% |
+| Fundamentals | **−88%** | −28.3% | **−0.54** | −94% | 52.3% | 7% / 45% |
+| Market consensus | abstained on every week (section 5) | | | | | |
 
 ## What the results mean
 
@@ -223,7 +298,9 @@ The committee stays out of the market. The two confident experts are the stand-i
 2. **The neuroplastic world model was the strongest single expert,** with a Sharpe of 1.13 against 0.93 for buy-and-hold.
 3. **The quant classifiers struggled.** Models that worked on IPO data did not carry over to weekly Bitcoin moves, which are much noisier.
 4. **The mini LLM shows what overfitting looks like.** It had a spectacular 2020–2021 (+300% and +191%) and then lost money every year after.
-5. **Phantom Flow was weak alone but different.** It made +191% with a Sharpe of 0.58, well below buy-and-hold, and was right on only 49% of its calls. But it agreed with the other experts in only 36–53% of weeks. That independence is what a committee needs, and adding it lifted the chair from a Sharpe of 0.93 to 1.05. The next section tests whether that is real.
+5. **The two newest seats lost money on their own, and one lost a lot.** The chart JEPA made 4% over six years with a hit rate of 48.3% — below a coin toss — which says the shape of the chart carries very little week-ahead information. The fundamentals seat lost 88% and drew down 94%, because it was bearish through most of a bull market. Neither is a good standalone strategy and neither is presented as one.
+6. **Yet the committee improved when they joined, which needs explaining rather than celebrating.** See the section below.
+7. **Phantom Flow was weak alone but different.** It made +191% with a Sharpe of 0.58, well below buy-and-hold, and was right on only 49% of its calls. But it agreed with the other experts in only 36–53% of weeks. That independence is what a committee needs, and adding it lifted the chair from a Sharpe of 0.93 to 1.05. The next section tests whether that is real.
 
 ## Calendar years
 
@@ -235,8 +312,11 @@ The committee stays out of the market. The two confident experts are the stand-i
 | Jev (stand-in) | +118% | +84% | −10% | +71% | +40% | +12% | 0% |
 | Mini LLM | +300% | +191% | −21% | −27% | −41% | −5% | −28% |
 | Phantom Flow | +346% | −14% | −20% | +6% | +19% | −23% | −1% |
-| **Panel chair (6)** | +453% | −3% | 0% | +50% | +7% | +34% | +5% |
-| Chair without Phantom Flow | +265% | +14% | −9% | +57% | 0% | +30% | +1% |
+| Chart JEPA | +54% | −23% | −22% | 0% | 0% | +12% | 0% |
+| Fundamentals | −63% | −62% | −13% | −3% | −31% | −3% | +46% |
+| **Panel chair (9)** | +548% | +26% | −1% | +47% | +37% | +22% | +12% |
+| Chair with 7 experts | +453% | −3% | 0% | +50% | +7% | +34% | +5% |
+| Chair with 5 experts | +265% | +14% | −9% | +57% | 0% | +30% | +1% |
 | Buy & hold | +353% | +42% | −65% | +164% | +124% | −7% | −15% |
 
 \* 2026 to 10 May.
@@ -274,6 +354,24 @@ A prediction-market price is a forecast that people are paid to get right and lo
 
 **One caveat built into the output.** Polymarket's contracts are "will it touch" bets over a month, not "where will it close in 7 days", so a probability derived from them is indicative rather than like-for-like. Kalshi's short-dated contracts quote a genuine closing-price distribution, and when those are the source the dashboard says so.
 
+## Did the two newest seats really help?
+
+Both lost money alone, yet the committee's Sharpe ratio rose from 1.05 to 1.21 and its total return roughly doubled. That is a suspicious-looking result and it gets the same three checks every other addition got.
+
+| Seat added | Sharpe before → after | 95% interval for the gap | Weeks changed | Excluding 2020 | Verdict |
+|---|---|---|---|---|---|
+| Phantom Flow | 0.93 → 1.05 | [−0.22, +0.50] | 57 of 332 | 0.53 → 0.55 | Not proven |
+| The market seat | 1.05 → 1.05 | [0.00, 0.00] | 0 of 332 | 0.55 → 0.55 | No data; abstained throughout |
+| **Chart JEPA + fundamentals** | **1.05 → 1.21** | **[−0.11, +0.44]** | 38 of 332 | **0.55 → 0.72** | **Not proven** |
+
+![Figure 5 — The two newest seats: the picture the JEPA reads, the four on-chain measures, and whether each addition held up](img/docs_img_newseats.png)
+
+**How can two losing experts improve the committee?** This is exactly what a committee is for. An expert who is often wrong, but wrong *at different times from everyone else*, still adds information to a vote. The fundamentals seat was bearish while the momentum models were bullish, and on 19 occasions it converted an undecided FLAT into a SHORT. Some of those shorts landed well.
+
+**Why it is still reported as not proven.** The 95% interval runs from −0.11 to +0.44, so it includes zero. The committee did no better in 11% of resampled histories. That is stronger evidence than Phantom Flow managed (26%), and unlike Phantom Flow it clearly survives dropping 2020 — 0.55 against 0.72 — but it does not clear the bar that was set in advance.
+
+**The caveat that matters most.** The fundamentals seat is close to a structural short: it said "expensive" in 151 weeks and "cheap" in 23. A permanently bearish voice will look good in any sample that contains a crash and poor in one that does not. This test period contains 2022, when Bitcoin fell 65%. Another cycle is needed before the improvement can be believed, and the honest summary is **"probably helps, not proven, and partly for a reason that may not repeat."**
+
 ## Did adding Phantom Flow really help?
 
 A better number is not the same as a real improvement, so three checks were run.
@@ -292,7 +390,7 @@ Sharpe ratios over the whole test. Bold is the setting used, fixed in advance. F
 
 **Every setting leaves the chair between 0.99 and 1.14, above 0.93.** Phantom Flow alone varies much more, from 0.41 to 0.98. Longer pivots (10 days) did best, but choosing them now would be tuning on the test, so the fixed setting stays.
 
-![Figure 5 — Phantom Flow on the dashboard: trailing stop, structure breaks and oscillator (2025 shown)](img/docs_img_phantom.png)
+![Figure 6 — Phantom Flow on the dashboard: trailing stop, structure breaks and oscillator (2025 shown)](img/docs_img_phantom.png)
 
 **Verdict:** Phantom Flow earns its seat as an independent voice. It changed the chair's call in 57 of 332 weeks, and the committee did at least as well with it. But the evidence that it *improves* the committee is weak and depends mainly on 2020. The honest claim is "it didn't hurt, and it may help".
 
@@ -321,6 +419,9 @@ The experts often disagree. For example, the world model and the transformer mad
 
 - **One historical path.** 332 weeks is one run of history. A different period could rank the experts differently.
 - **A friendly period for holding Bitcoin.** 2020–2021 was a strong bull market, so buy-and-hold is hard to beat on raw return.
+- **The chart JEPA is the most overfit-prone seat.** About 650 weekly pictures is very little for a neural network, even a tiny one. Watch its embedding spread and its agreement with the neuroplastic world model: if either looks wrong, ignore the seat.
+- **Fundamentals are slow and were bearish for most of the test.** A valuation signal in a rising market mostly says "expensive". That is a real property of valuation timing, not a bug, but it means this seat contributes caution rather than accuracy.
+- **Nine experts loosens the chair's threshold.** "At least 3" was half the panel at six seats and is a third at nine. The majority condition is now carrying more of the load.
 - **The market expert covers a short window at best.** Liquid Bitcoin prediction markets are recent, so it can never be tested over the same 332 weeks as the models. Judge it only on its own sub-period.
 - **Prediction-market prices carry a risk premium** and are not pure forecasts. Taking the difference between two symmetric contracts removes most of it, but not all.
 - **Phantom Flow here is not the paid indicator.** It follows the published description with standard formulas, on daily closes only. Its gain for the committee may be luck (section 5).
@@ -337,6 +438,7 @@ pip install torch scikit-learn pandas numpy
 python panel_backtest.py      # downloads data, trains, tests (about 10 minutes)
 python fetch_markets.py       # optional: prediction-market data (needs internet; adds expert 7)
 python pf_effect.py           # did Phantom Flow help? (bootstrap, ex-2020)
+python chair_effect.py        # did EVERY added seat help? (the full ladder)
 python make_dashboard.py      # rebuilds ../dashboard/index.html
 pytest -q ../tests            # Phantom Flow tests, including the no-hindsight check
 export TYPESAFE_API_KEY=...   # optional: use the real Jev
@@ -374,3 +476,11 @@ export TYPESAFE_API_KEY=...   # optional: use the real Jev
 | Lean | The gap between what the crowd pays for an up move and for an equal-sized down move |
 | Brier score | How far a probability was from what happened: lower is better, and always saying 50% scores 0.25 |
 | Efficient-market null | The assumption that a traded price already contains everything knowable, so no model should beat it |
+| JEPA | Joint Embedding Predictive Architecture: learns by predicting a compressed summary of hidden input, not the raw input |
+| Embedding | A short list of numbers standing for the meaning of something larger, here a piece of chart |
+| Embedding collapse | The failure where a model maps every input to the same point, making its predictions perfect and useless |
+| MVRV | Market value divided by realised value: today's price against what holders actually paid |
+| Realised value | Every coin priced at the moment it last moved — the market's true cost basis |
+| Puell multiple | Today's newly issued coins in dollars against their own yearly average: how rich miners are |
+| Hash ribbon | The 30-day average hash rate over the 60-day: whether miners are switching machines on or off |
+| Metcalfe's law | The idea that a network is worth roughly the square of its number of users |

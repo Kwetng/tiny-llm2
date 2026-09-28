@@ -47,6 +47,8 @@ from sklearn.preprocessing import StandardScaler
 from jev_market import get_jev
 import phantom_flow
 import prediction_market
+import chart_jepa
+import fundamentals
 
 OFFLINE = "--offline" in sys.argv
 HERE = Path(__file__).resolve().parent
@@ -70,7 +72,8 @@ for f, url in SOURCES.items():
         urllib.request.urlretrieve(url, DATA / f)
 
 cm = pd.read_csv(DATA / "btc.csv", parse_dates=["time"], low_memory=False).set_index("time").sort_index()
-cm = cm[["PriceUSD", "CapMVRVCur", "AdrActCnt", "HashRate", "FlowInExNtv", "FlowOutExNtv", "SplyCur"]].loc["2012-01-01":]
+cm = cm[["PriceUSD", "CapMVRVCur", "AdrActCnt", "HashRate", "FlowInExNtv", "FlowOutExNtv", "SplyCur",
+         "CapMrktCurUSD", "IssTotUSD"]].loc["2012-01-01":]
 cm = cm.dropna(subset=["PriceUSD"])
 vix = pd.read_csv(DATA / "vix.csv", parse_dates=["DATE"]).set_index("DATE")["CLOSE"]
 day = cm.copy()
@@ -262,12 +265,20 @@ def to_action(p):
 jev = get_jev(offline=OFFLINE)
 print(f"Jev: {jev.name}")
 EXPERTS = ["Random Forest", "Tabular Transformer", "Neuroplastic World Model", "Jev (System One)",
-           "Mini LLM tape reader", "Phantom Flow", "Market consensus"]
+           "Mini LLM tape reader", "Phantom Flow", "Market consensus", "Chart JEPA", "Fundamentals"]
 OLD_CHAIR = "Chair without Phantom Flow"          # the original 5-expert rule, kept for comparison
 NO_MKT_CHAIR = "Chair without the market"         # the 6-expert rule, to isolate what expert 7 adds
+NO_NEW_CHAIR = "Chair without JEPA + fundamentals"   # the 7-expert rule, before today's two seats
 MKT = prediction_market.WeeklySignals(DATA / "prediction_market.json")
 print(f"Prediction market: {len(MKT)} weeks cached"
       + ("" if MKT.available else " - none. Expert 7 abstains on every week; run code/fetch_markets.py."))
+CHARTS, CHART_DATES = chart_jepa.build_charts(wk.price, wk.index)
+CHART_AT = {d: i for i, d in enumerate(CHART_DATES)}
+FUND = fundamentals.daily_metrics(day).reindex(wk.index)
+UP_NEXT = (wk.next_ret > 0).astype(int).values
+print(f"Chart JEPA: {len(CHARTS)} rendered charts ({chart_jepa.ROWS}x{chart_jepa.WINDOW}, "
+      f"{chart_jepa.N_PATCH} strips) | Fundamentals: {', '.join(fundamentals.METRICS)}")
+
 rows = []
 test = wk.loc[f"{TEST_START}-01-01":]
 t_all = time.time()
@@ -280,6 +291,11 @@ for year in sorted(set(test.index.year)):
     tfs = [fit_transformer(Xtr, ytr, s) for s in (0, 1, 2)]
     v5 = {s: v5_member(train, s) for s in V5_SEEDS}
     llm = fit_tape_llm(day.r.loc["2013-01-01":f"{year - 1}-12-31"].dropna().values)
+    ctr = [i for i, d in enumerate(CHART_DATES) if d < pd.Timestamp(f"{year}-01-01") and not pd.isna(wk.next_ret.get(d))]
+    jepa = chart_jepa.ChartJEPA(seed=year).fit(CHARTS[ctr], (wk.next_ret.reindex(CHART_DATES).values[ctr] > 0).astype(int))
+    fmask = (wk.index < f"{year}-01-01") & wk.next_ret.notna().values
+    fund = fundamentals.FundamentalModel().fit(FUND, fmask, UP_NEXT)
+    fund_z = fund.composite(FUND)
     imp = sorted(zip(FEATURES, rf.feature_importances_), key=lambda t: -t[1])[:3]
     for date, row in test[test.index.year == year].iterrows():
         x = sc.transform(row[FEATURES].values.reshape(1, -1).astype(float))
@@ -294,32 +310,44 @@ for year in sorted(set(test.index.year)):
         p_llm, mu_llm, surprise, tape = tape_forecast(llm, recent, int(date.strftime("%Y%m%d")))
         pf = PF.loc[:date].iloc[-1]                   # Phantom Flow state at the Sunday close
         p_pf = phantom_flow.p_up(int(pf.score))
+        ci = CHART_AT.get(date)
+        p_jepa = 0.5 if ci is None else jepa.p_up(CHARTS[ci])
+        fz = float(fund_z.get(date, float("nan")))
+        p_fund = fund.p_up(FUND.loc[:date])
         mkt = MKT.get(date)                           # None on weeks with no liquid contract
         mkt_lean = None if mkt is None else float(mkt["lean"])
         p_mkt = 0.5 if mkt_lean is None else prediction_market.p_up_from_lean(mkt_lean)
         acts = {"Random Forest": to_action(p_rf), "Tabular Transformer": to_action(p_tf),
                 "Neuroplastic World Model": {"BUY": 1, "SELL": -1, "HOLD": 0}[v5_sig],
                 "Jev (System One)": to_action(p_jev), "Mini LLM tape reader": to_action(p_llm),
-                "Phantom Flow": int(pf.call), "Market consensus": prediction_market.vote(mkt_lean)}
+                "Phantom Flow": int(pf.call), "Market consensus": prediction_market.vote(mkt_lean),
+                "Chart JEPA": to_action(p_jepa), "Fundamentals": fundamentals.vote(fz)}
         old5 = [acts[e] for e in EXPERTS[:5]]
         acts[OLD_CHAIR] = 1 if old5.count(1) >= 3 else -1 if old5.count(-1) >= 3 else 0
         six = [acts[e] for e in EXPERTS[:6]]
         nl6, ns6 = six.count(1), six.count(-1)
         acts[NO_MKT_CHAIR] = 1 if (nl6 >= 3 and nl6 > ns6) else -1 if (ns6 >= 3 and ns6 > nl6) else 0
+        sev = [acts[e] for e in EXPERTS[:7]]
+        nl7, ns7 = sev.count(1), sev.count(-1)
+        acts[NO_NEW_CHAIR] = 1 if (nl7 >= 3 and nl7 > ns7) else -1 if (ns7 >= 3 and ns7 > nl7) else 0
         n_long, n_short = sum(acts[e] == 1 for e in EXPERTS), sum(acts[e] == -1 for e in EXPERTS)
         acts["Panel chair (consensus)"] = 1 if (n_long >= 3 and n_long > n_short) else -1 if (n_short >= 3 and n_short > n_long) else 0
         rows.append({"date": date, "price": row.price, "next_ret": row.next_ret,
                      "p": {"Random Forest": p_rf, "Tabular Transformer": p_tf, "Neuroplastic World Model": p_v5,
                            "Jev (System One)": p_jev, "Mini LLM tape reader": p_llm, "Phantom Flow": p_pf,
-                           "Market consensus": p_mkt,
+                           "Market consensus": p_mkt, "Chart JEPA": p_jepa, "Fundamentals": p_fund,
                            OLD_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm])),
                            NO_MKT_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm, p_pf])),
+                           NO_NEW_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm, p_pf])),
                            "Panel chair (consensus)": float(np.mean(
-                               [p_rf, p_tf, p_v5, p_jev, p_llm, p_pf] + ([p_mkt] if mkt_lean is not None else [])))},
+                               [p_rf, p_tf, p_v5, p_jev, p_llm, p_pf, p_jepa, p_fund]
+                               + ([p_mkt] if mkt_lean is not None else [])))},
                      "action": acts,
                      "detail": {"rf_top_features": [(f, round(float(v), 3)) for f, v in imp], "v5_votes": vc, "v5_pred": v5_mu,
                                 "regime": regime, "llm_mean": mu_llm, "llm_surprise": surprise, "tape": tape,
                                 "n_long": n_long, "n_short": n_short, "market": mkt,
+                                "jepa": {"collapse": round(jepa.collapse_score(), 3)},
+                                "fund": {"z": None if pd.isna(fz) else round(fz, 2), **fund.explain(FUND.loc[:date])},
                                 "pf": {"shift": int(pf["shift"]), "structure": int(pf.structure), "osc": float(pf.osc),
                                        "stop": float(pf.stop), "score": int(pf.score)}}})
     print(f"  {year}: trained on {len(tr)} weeks, predicted {sum(test.index.year == year)} weeks ({time.time() - t0:.0f}s)")
@@ -329,7 +357,7 @@ print(f"walk-forward done in {time.time() - t_all:.0f}s")
 # 4. PERFORMANCE
 # =============================================================================
 NAMES = EXPERTS + ["Panel chair (consensus)"]
-BENCH = [NO_MKT_CHAIR, OLD_CHAIR, "Buy & hold"]
+BENCH = [NO_NEW_CHAIR, NO_MKT_CHAIR, OLD_CHAIR, "Buy & hold"]
 dates = [r["date"] for r in rows]
 done = [r for r in rows if not pd.isna(r["next_ret"])]          # weeks whose outcome is known
 simple = np.array([math.expm1(r["next_ret"]) for r in done])
@@ -457,6 +485,14 @@ why = {
                          f"The crowd pays {d['market']['p_touch_up']:.0%} for a +{d['market']['k']:.0%} move and "
                          f"{d['market']['p_touch_down']:.0%} for -{d['market']['k']:.0%}, a lean of "
                          f"{d['market']['lean']:+.2f} ({d['market']['days_to_expiry']:.0f} days to expiry)."),
+    "Chart JEPA": (f"Read the last {chart_jepa.WINDOW} weeks as a {chart_jepa.ROWS}x{chart_jepa.WINDOW} picture and "
+                   f"predicted the embedding of the next {chart_jepa.PATCH} weeks; embedding spread "
+                   f"{d['jepa']['collapse']:.2f} (near 0 would mean the model had collapsed)."),
+    "Fundamentals": (f"Valuation score {d['fund']['z']:+.2f} against its own four-year norm (acts beyond "
+                     f"{fundamentals.VOTE_Z:+.2f}): " + ", ".join(
+                         f"{fundamentals.PLAIN[k]} {d['fund'][k]:+.2f}" for k in fundamentals.METRICS
+                         if d['fund'].get(k) is not None) + "."
+                     ) if d["fund"]["z"] is not None else "Not enough history yet for a valuation score.",
     "Panel chair (consensus)": f"{d['n_long']} of {len(EXPERTS)} experts LONG, {d['n_short']} SHORT; needs 3 and a majority of those taking a side.",
 }
 # ---- Phantom Flow: daily series for the dashboard + parameter sensitivity (reported, not used to choose) ----
@@ -499,7 +535,14 @@ result = {"generated": time.strftime("%Y-%m-%d"), "decision_model": jev.name, "a
           "action": {n: [int(r["action"][n]) for r in rows] for n in NAMES},
           "regime": [r["detail"]["regime"] for r in rows],
           "llm_surprise": [float(r["detail"]["llm_surprise"]) for r in rows],
-          "benchmarks": BENCH, "old_chair": {"action": [int(r["action"][OLD_CHAIR]) for r in rows], "p": [float(r["p"][OLD_CHAIR]) for r in rows]},
+          "benchmarks": BENCH,
+          "no_new_chair": {"action": [int(r["action"][NO_NEW_CHAIR]) for r in rows], "p": [float(r["p"][NO_NEW_CHAIR]) for r in rows]},
+          "jepa": {"collapse": [r["detail"]["jepa"]["collapse"] for r in rows],
+                   "window": chart_jepa.WINDOW, "rows": chart_jepa.ROWS, "patch": chart_jepa.PATCH,
+                   "n_patch": chart_jepa.N_PATCH, "n_context": chart_jepa.N_CONTEXT, "emb": chart_jepa.EMB},
+          "fundamentals": {"metrics": fundamentals.METRICS, "plain": fundamentals.PLAIN, "vote_z": fundamentals.VOTE_Z,
+                           "weekly": [r["detail"]["fund"] for r in rows]},
+          "old_chair": {"action": [int(r["action"][OLD_CHAIR]) for r in rows], "p": [float(r["p"][OLD_CHAIR]) for r in rows]},
           "no_mkt_chair": {"action": [int(r["action"][NO_MKT_CHAIR]) for r in rows], "p": [float(r["p"][NO_MKT_CHAIR]) for r in rows]},
           "market_eval": market_eval,
           "market_weekly": [r["detail"]["market"] for r in rows],
@@ -512,6 +555,7 @@ pd.DataFrame({"date": result["dates"], "price": result["price"],
               **{f"{n} action": result["action"][n] for n in NAMES}, **{f"{n} P(up)": result["p"][n] for n in NAMES},
               f"{OLD_CHAIR} action": result["old_chair"]["action"],
               f"{NO_MKT_CHAIR} action": result["no_mkt_chair"]["action"],
+              f"{NO_NEW_CHAIR} action": result["no_new_chair"]["action"],
               "Jev regime": result["regime"]}).to_csv(OUT / "weekly_signals.csv", index=False)
 pd.DataFrame({n: {k: v for k, v in m.items() if k not in ("equity", "yearly")} for n, m in perf.items()}).T.to_csv(OUT / "performance_summary.csv")
 pd.DataFrame({n: m["yearly"] for n, m in perf.items()}).T.to_csv(OUT / "yearly_returns.csv")

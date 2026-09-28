@@ -1,0 +1,58 @@
+{
+ "weeks": 332,
+ "blocks": 8,
+ "resamples": 4000,
+ "steps": [
+  {
+   "seat": "Phantom Flow",
+   "sharpe_before": 0.9263959360293018,
+   "sharpe_after": 1.047850088468955,
+   "diff": 0.12145415243965318,
+   "ci95": [
+    -0.2174388452575005,
+    0.4973458544416104
+   ],
+   "p_no_better": 0.2585,
+   "weeks_changed": 57,
+   "share_changed": 0.1716867469879518,
+   "ex2020_before": 0.5330267491987646,
+   "ex2020_after": 0.5452613652598431,
+   "survives_ex2020": true,
+   "verdict": "not proven: the interval includes zero"
+  },
+  {
+   "seat": "the market seat",
+   "sharpe_before": 1.047850088468955,
+   "sharpe_after": 1.047850088468955,
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "p_no_better": 1.0,
+   "weeks_changed": 0,
+   "share_changed": 0.0,
+   "ex2020_before": 0.5452613652598431,
+   "ex2020_after": 0.5452613652598431,
+   "survives_ex2020": false,
+   "verdict": "not proven: the interval includes zero"
+  },
+  {
+   "seat": "chart JEPA + fundamentals",
+   "sharpe_before": 1.047850088468955,
+   "sharpe_after": 1.2100787524285457,
+   "diff": 0.16222866395959068,
+   "ci95": [
+    -0.10501224390016071,
+    0.4399501984466334
+   ],
+   "p_no_better": 0.1145,
+   "weeks_changed": 38,
+   "share_changed": 0.1144578313253012,
+   "ex2020_before": 0.5452613652598431,
+   "ex2020_after": 0.7160920232578792,
+   "survives_ex2020": true,
+   "verdict": "not proven: the interval includes zero"
+  }
+ ]
+}

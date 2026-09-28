@@ -1,5 +1,5 @@
 <title>BTC Expert Panel</title>
-<meta name="description" content="Seven experts, including the Phantom Flow indicator and the prediction market's own price, call Bitcoin's next week: walk-forward signals and performance since 2020.">
+<meta name="description" content="Nine experts in five families - machine learning, latent world models, decision models, a technical indicator and outside views - call Bitcoin's next week, backtested walk-forward since 2020.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -8,7 +8,7 @@
   --bg:#F3F4F6; --surface:#FFFFFF; --surface2:#F8F9FA; --ink:#14161B; --ink2:#545B69; --ink3:#7C8392; --rule:#E2E4E9;
   --accent:#B85F0E; --accent-soft:#FBEBDB;
   --long:#2a78d6; --short:#e34948; --flat:#dcdbd6; --bh:#8a8f99;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#993556; --s8:#4a3aa7;
+  --f1:#2a78d6; --f2:#eb6834; --f3:#1baf7a; --f4:#eda100; --f5:#993556; --f6:#4a3aa7;
   --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
@@ -19,7 +19,7 @@
     --bg:#0F1115; --surface:#171A20; --surface2:#1C2027; --ink:#F2F3F5; --ink2:#A9AFBC; --ink3:#7D8491; --rule:#2A2E36;
     --accent:#F29A3A; --accent-soft:#3A2A18;
     --long:#3987e5; --short:#e66767; --flat:#3a3d44; --bh:#8d93a0;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#C4617F; --s8:#9085e9;
+    --f1:#3987e5; --f2:#d95926; --f3:#199e70; --f4:#c98500; --f5:#C4617F; --f6:#9085e9;
   }
 }
 :root[data-theme="dark"]{
@@ -27,7 +27,7 @@
   --bg:#0F1115; --surface:#171A20; --surface2:#1C2027; --ink:#F2F3F5; --ink2:#A9AFBC; --ink3:#7D8491; --rule:#2A2E36;
   --accent:#F29A3A; --accent-soft:#3A2A18;
   --long:#3987e5; --short:#e66767; --flat:#3a3d44; --bh:#8d93a0;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#C4617F; --s8:#9085e9;
+  --f1:#3987e5; --f2:#d95926; --f3:#199e70; --f4:#c98500; --f5:#C4617F; --f6:#9085e9;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;margin:0}
@@ -73,6 +73,16 @@ header .facts b{color:var(--ink);font-weight:500}
 .seat .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .seat h3{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
 .swatch{width:10px;height:10px;border-radius:2px;flex:none}
+.swatch.alt{background:transparent!important;box-shadow:inset 0 0 0 2px var(--sw)}
+.fam{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--ink2);margin-top:2px}
+.fam span{display:inline-flex;align-items:center;gap:6px}
+.zbar{position:relative;height:18px;margin:2px 0 6px}
+.zbar .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--ink3)}
+.zbar .track{position:absolute;inset:6px 0;border-radius:3px;background:var(--surface2);border:1px solid var(--rule)}
+.zbar .fill{position:absolute;top:5px;height:8px;border-radius:2px}
+.zrow{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(0,2fr) 54px;gap:10px;align-items:center;font-size:13px}
+.zrow .lab{color:var(--ink2)}
+.zrow .val{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
 .seat .src{font-family:var(--mono);font-size:11px;color:var(--ink3)}
 .meter{position:relative;height:22px}
 .meter .track{position:absolute;inset:8px 0;border-radius:3px;background:linear-gradient(90deg,color-mix(in oklab,var(--short) 22%,var(--surface)) 0 45%,var(--surface2) 45% 55%,color-mix(in oklab,var(--long) 22%,var(--surface)) 55% 100%);border:1px solid var(--rule)}
@@ -148,6 +158,7 @@ footer a{color:var(--ink2)}
   <section aria-labelledby="calls-h" style="display:flex;flex-direction:column;gap:12px">
     <div class="panel-head" style="padding:0 2px">
       <h2 id="calls-h">Latest calls</h2>
+      <div class="fam" id="famlegend"></div>
       <p><span id="stale"></span> Each expert gives the chance that Bitcoin is higher in 7 days. At 55% or more it goes LONG; at 45% or less, SHORT; in between, FLAT. Phantom Flow gives a confluence score instead (−3 to +3, shown on the same scale); it acts only when its trend shift and oscillator agree and structure does not contradict. The market expert is different: it is not a model but the price of prediction-market contracts, and it abstains on any week with no liquid market. The panel chair acts when at least 3 experts agree and they outnumber those on the other side.</p>
     </div>
     <div class="seats" id="seats"></div>
@@ -200,6 +211,31 @@ footer a{color:var(--ink2)}
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"><div class="scroll"><table class="matrix sens" id="sens"></table></div><div class="scroll"><table class="matrix sens" id="sens2"></table></div></div>
   </section>
 
+  <section class="panel" aria-labelledby="new-h">
+    <div class="panel-head">
+      <h2 id="new-h">The two newest seats</h2>
+      <p>One reads the chart as a picture; the other ignores the chart entirely and asks what Bitcoin is worth. They were added together, so their effect is measured against the seven-expert chair.</p>
+    </div>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+      <div>
+        <h3 style="font-size:16px;margin-bottom:6px">Chart JEPA — what the model actually sees</h3>
+        <p class="muted" style="margin:0 0 8px;font-size:13px">The last 52 weekly closes, drawn as a 24×52 picture and scaled to its own high and low, so only the <b>shape</b> survives. The model embeds the strips left of the line and predicts the embedding of the strips right of it — never the pixels.</p>
+        <canvas id="jepaChart" width="520" height="240" style="width:100%;height:auto;border:1px solid var(--rule);border-radius:8px" aria-label="The rendered chart image the JEPA reads"></canvas>
+        <div id="jepaNote" class="muted" style="font-size:12px;margin-top:8px"></div>
+      </div>
+      <div>
+        <h3 style="font-size:16px;margin-bottom:6px">Fundamentals — four on-chain measures</h3>
+        <p class="muted" style="margin:0 0 10px;font-size:13px">Each is scored against its own previous four years, then signed so <b>right of centre is bullish</b>. The seat votes only when their average passes ±<span id="fvz"></span>.</p>
+        <div id="fundBars"></div>
+        <div id="fundNote" class="muted" style="font-size:12px;margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="panel-head" style="margin-top:10px"><h3 style="font-size:16px">Did each new seat actually help?</h3>
+      <p>Every time a seat is added the headline number moves and it is tempting to call that progress. Each row re-draws the history in 8-week blocks 4,000 times, so a gap that is really luck shows up as an interval crossing zero. The pass condition was fixed before any of these were run.</p></div>
+    <div class="scroll"><table id="ladder"></table></div>
+    <div id="ladderNote" class="verdictbox" style="margin-top:4px"></div>
+  </section>
+
   <section class="panel" aria-labelledby="mkt-h">
     <div class="panel-head">
       <h2 id="mkt-h">The market's own view</h2>
@@ -228,6 +264,8 @@ footer a{color:var(--ink2)}
         <li><b>Jev (System One)</b>: TypeSafe AI's decision model answers "Will Bitcoin be higher in 7 days?" and names the market regime. <b>In this run it is an offline stand-in, not Jev</b>: a fixed trend-and-valuation rule.</li>
         <li><b>Mini LLM tape reader</b>: the from-scratch GPT in <span class="num">tiny-llm2</span>, trained on daily returns written as letters (a = big fall … g = big rise). It writes 256 possible next weeks and reports how many end higher.</li>
         <li><b>Phantom Flow</b>: an open re-implementation of the paid TradingView indicator's three published modules on daily closes: an ATR trend shift (ATR 10 × 3), swing structure (breaks of 5-day swing highs and lows) and an oscillator (distance from the 21-day average in ATRs). Its "combo" call needs shift and oscillator to agree and structure not to disagree. It needs no training, so it is not refitted each year.</li>
+        <li><b>Chart JEPA</b>: the technical-analysis seat. A <b>joint embedding predictive architecture</b> — LeCun's idea — renders the last 52 weeks as a picture and learns to predict the <i>embedding</i> of the next piece of chart rather than its pixels, because pixels are mostly noise. A logistic probe turns that predicted embedding into a probability. The window is scaled to its own high and low, so the model sees shape, never price level.</li>
+        <li><b>Fundamentals</b>: the only seat that never looks at price action. It reads four on-chain measures — price against what holders paid (MVRV), miner revenue against normal (Puell), the hash-rate trend, and price against adoption (Metcalfe) — each scored against its own previous four years. Fundamentals are slow, so it changes its mind rarely and is expected to be weak week to week.</li>
         <li><b>Market consensus</b>: not a model. Polymarket runs Bitcoin contracts as a ladder of "will it reach $X" bets, so the prices are a picture of the range the crowd expects. The signal is the gap between what a +10% move costs and what a −10% move costs. It <b>abstains</b> whenever no liquid market existed, which is most of 2020–2024, because these markets did not exist then.</li>
         <li><b>Panel chair</b>: LONG or SHORT when at least 3 experts agree and they outnumber the other side. The two dashed grey lines are the earlier chairs — 3 of 5 (no Phantom Flow) and 3 of 6 (no market) — kept to show what each new expert adds.</li>
       </ul>
@@ -261,12 +299,30 @@ const N = D.n_done;
 const SRC = {"Random Forest":"projectskf · quant research","Tabular Transformer":"projectskf · quant research",
   "Neuroplastic World Model":"neuroplastic-financial-world-model · V5","Jev (System One)":"TypeSafe AI · offline stand-in",
   "Mini LLM tape reader":"tiny-llm2 · mini_gpt","Phantom Flow":"indicator · open re-implementation","Market consensus":"prediction market · not a model",
-  "Panel chair (consensus)":"panel rule · 3 of 7 and a majority of those taking a side"};
+  "Chart JEPA":"joint embedding predictive architecture","Fundamentals":"on-chain valuation",
+  "Panel chair (consensus)":"panel rule · 3 of 9 and a majority of those taking a side"};
 const SHORTNAME = {"Random Forest":"Random Forest","Tabular Transformer":"Transformer","Neuroplastic World Model":"Neuroplastic",
-  "Jev (System One)":"Jev","Mini LLM tape reader":"Mini LLM","Phantom Flow":"Phantom Flow","Market consensus":"Market","Panel chair (consensus)":"Panel chair",
-  [OLD]:"Chair w/o PF",[NOMKT]:"Chair w/o market","Buy & hold":"Buy & hold"};
+  "Jev (System One)":"Jev","Mini LLM tape reader":"Mini LLM","Phantom Flow":"Phantom Flow","Market consensus":"Market","Chart JEPA":"Chart JEPA","Fundamentals":"Fundamentals",
+  "Panel chair (consensus)":"Panel chair",[OLD]:"Chair: 5 experts",[NOMKT]:"Chair: 6 experts",
+  "Chair without JEPA + fundamentals":"Chair: 7 experts","Buy & hold":"Buy & hold"};
+// Nine experts is more than any categorical palette can carry, so colour encodes the FAMILY an
+// expert belongs to and the line style separates the two members inside a family.
+const FAMILY = {
+  "Random Forest": ["f1", 0], "Tabular Transformer": ["f1", 1],
+  "Jev (System One)": ["f2", 0], "Mini LLM tape reader": ["f2", 1],
+  "Neuroplastic World Model": ["f3", 0], "Chart JEPA": ["f3", 1],
+  "Phantom Flow": ["f4", 0],
+  "Market consensus": ["f5", 0], "Fundamentals": ["f5", 1],
+  "Panel chair (consensus)": ["f6", 0]};
+const FAMILY_NAME = {f1: "Learned from price history", f2: "Decision and language models",
+                     f3: "Latent world models", f4: "Technical indicator", f5: "Outside views",
+                     f6: "The committee"};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const colorOf = n => n === "Buy & hold" ? css("--bh") : (n === OLD || n === NOMKT) ? css("--ink3") : css("--s" + (NAMES.indexOf(n) + 1));
+const famOf = n => (FAMILY[n] || ["", 0])[0];
+const isAlt = n => (FAMILY[n] || ["", 0])[1] === 1;
+const colorOf = n => FAMILY[n] ? css("--" + famOf(n)) : n === "Buy & hold" ? css("--bh") : css("--ink3");
+const dashOf = n => n === "Buy & hold" ? [6, 4] : !FAMILY[n] ? [2, 3] : isAlt(n) ? [3, 3] : [];
+const swatch = n => `<span class="swatch${isAlt(n) ? " alt" : ""}" style="background:${colorOf(n)};--sw:${colorOf(n)}"></span>`;
 const pct = (v, d = 0) => { const s = Math.abs(v * 100).toFixed(d); return (+s === 0 ? "" : v >= 0 ? "+" : "−") + s + "%"; };
 const pct0 = (v, d = 0) => (v * 100).toFixed(d) + "%";
 const fmtDate = s => new Date(s + "T00:00:00Z").toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"});
@@ -313,7 +369,7 @@ const [SH, LG] = M.thresholds;
 document.getElementById("seats").innerHTML = NAMES.map(n => {
   const v = live[n], f = FULL[n];
   return `<article class="seat${n === CHAIR ? " chair" : ""}${n === MKT && !ME.weeks_covered ? " abstain" : ""}">
-    <div class="top"><div><h3><span class="swatch" style="background:var(--s${NAMES.indexOf(n) + 1})"></span>${esc(n)}</h3><div class="src">${esc(SRC[n])}</div></div>
+    <div class="top"><div><h3>${swatch(n)}${esc(n)}</h3><div class="src">${esc(SRC[n])}</div></div>
       <span class="pill ${v.action}">${v.action}</span></div>
     <div><div class="meter" role="img" aria-label="${n === "Phantom Flow" ? "confluence score" : "P(up) " + pct0(v.p_up)}"><div class="track"${n === "Phantom Flow" ? ' style="background:var(--surface2)"' : ""}></div>
       ${n === "Phantom Flow" ? "" : `<div class="tick" style="left:${SH * 100}%"></div><div class="tick" style="left:${LG * 100}%"></div>`}
@@ -373,7 +429,7 @@ function renderEquity() {
   const labels = D.dates.slice(a, b + 2);
   const sets = ALL.map(n => ({label: SHORTNAME[n], full: n, data: [1, ...D.equity[n].slice(a, b + 1).map(v => v / base(n))],
     borderColor: colorOf(n), backgroundColor: colorOf(n), borderWidth: n === CHAIR ? 3 : 1.75, pointRadius: 0, pointHoverRadius: 4,
-    borderDash: n === "Buy & hold" ? [6, 4] : n === OLD ? [2, 3] : n === NOMKT ? [5, 3] : n === MKT ? [8, 3] : [], tension: 0}));
+    borderDash: dashOf(n), tension: 0}));
   const cfg = {type: "line", data: {labels, datasets: sets}, plugins: [crosshair],
     options: {responsive: true, maintainAspectRatio: false, animation: false, interaction: {mode: "index", intersect: false},
       scales: {x: {...axisStyle(), ticks: {...axisStyle().ticks, maxTicksLimit: 8, callback: (v, i) => fmtDate(labels[i]).replace(/^\d+ /, "")}},
@@ -453,6 +509,82 @@ function renderPFStatic() {
   tbl("sens2", "Panel chair with it", "chair_sharpe", s => `max drawdown ${pct(s.chair_max_drawdown)}`, `Chair without Phantom Flow: ${FULL[OLD].sharpe.toFixed(2)}. Hover for drawdown.`);
 }
 
+// ---------- the two newest seats ----------
+function renderFamilies() {
+  const seen = [];
+  NAMES.forEach(n => { const f = famOf(n); if (f && !seen.includes(f)) seen.push(f); });
+  document.getElementById("famlegend").innerHTML = seen.map(f => {
+    const mem = NAMES.filter(n => famOf(n) === f);
+    return `<span><span class="swatch" style="background:${css("--" + f)}"></span>${esc(FAMILY_NAME[f])}${mem.length > 1 ? ` <span class="muted">(${mem.length})</span>` : ""}</span>`;
+  }).join("") + `<span class="muted">solid = first in family, dotted = second</span>`;
+}
+
+function renderJepa() {
+  const J = D.jepa, c = document.getElementById("jepaChart"), g = c.getContext("2d");
+  const px = D.price.slice(-J.window);
+  const W = J.window, R = J.rows, cw = c.width / W, ch = c.height / R;
+  const lo = Math.min(...px), hi = Math.max(...px);
+  g.clearRect(0, 0, c.width, c.height);
+  g.fillStyle = css("--surface"); g.fillRect(0, 0, c.width, c.height);
+  const rowOf = v => Math.round((hi - lo < 1e-12 ? 0 : (v - lo) / (hi - lo)) * (R - 1));
+  const ink = css("--f3");
+  for (let i = 0; i < W; i++) {
+    const r = rowOf(px[i]);
+    if (i) { const q = rowOf(px[i - 1]), a = Math.min(q, r), b = Math.max(q, r);
+      g.globalAlpha = 0.45; g.fillStyle = ink;
+      for (let k = a; k <= b; k++) g.fillRect(i * cw, (R - 1 - k) * ch, cw - 0.5, ch - 0.5); }
+    g.globalAlpha = 1; g.fillStyle = ink;
+    g.fillRect(i * cw, (R - 1 - r) * ch, cw - 0.5, ch - 0.5);
+  }
+  g.globalAlpha = 1;
+  const split = J.n_context * J.patch * cw;
+  g.strokeStyle = css("--accent"); g.lineWidth = 2; g.setLineDash([5, 4]);
+  g.beginPath(); g.moveTo(split, 0); g.lineTo(split, c.height); g.stroke(); g.setLineDash([]);
+  g.fillStyle = css("--ink2"); g.font = "11px ui-monospace, monospace";
+  g.fillText("context: the model may look here", 6, 14);
+  g.fillText("predicted", split + 6, 14);
+  const col = J.collapse[J.collapse.length - 1];
+  document.getElementById("jepaNote").innerHTML =
+    `${J.n_patch} strips of ${J.patch} weeks, ${J.emb}-dimensional embeddings. <b>Embedding spread ${col.toFixed(2)}</b> — a JEPA fails by mapping every chart to the same point, which would show as a spread near zero, so it is measured on every run and reported whatever it says.`;
+}
+
+function renderFund() {
+  const F = D.fundamentals, last = F.weekly[F.weekly.length - 1];
+  document.getElementById("fvz").textContent = F.vote_z.toFixed(2);
+  const LIM = 2.5;
+  document.getElementById("fundBars").innerHTML = F.metrics.map(k => {
+    const v = last[k];
+    if (v == null) return `<div class="zrow"><span class="lab">${esc(F.plain[k])}</span><span class="muted">no reading yet</span><span class="val">–</span></div>`;
+    const w = Math.min(Math.abs(v), LIM) / LIM * 50;
+    const col = v >= 0 ? css("--long") : css("--short");
+    return `<div class="zrow"><span class="lab">${esc(F.plain[k])}</span>
+      <span class="zbar"><span class="track"></span><span class="mid"></span>
+        <span class="fill" style="background:${col};left:${v >= 0 ? 50 : 50 - w}%;width:${w}%"></span></span>
+      <span class="val">${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}</span></div>`;
+  }).join("");
+  const fa = D.action["Fundamentals"];
+  document.getElementById("fundNote").innerHTML = last.z == null
+    ? "Not enough history yet for a valuation score."
+    : `Average <b>${last.z >= 0 ? "+" : "−"}${Math.abs(last.z).toFixed(2)}</b>, so the seat is <b>${LBL[fa[fa.length - 1]]}</b>. Bars are standard deviations from each measure's own four-year norm; left of centre is bearish.`;
+}
+
+function renderLadder() {
+  const L = D.chair_effect;
+  document.getElementById("ladder").innerHTML =
+    `<thead><tr><th>Seat added</th><th>Sharpe before</th><th>after</th><th>difference</th><th>95% interval</th><th>Weeks changed</th><th>Excluding 2020</th><th>Verdict</th></tr></thead><tbody>` +
+    L.steps.map(s => `<tr${s.seat.includes("JEPA") ? ' class="chair"' : ""}><td>${esc(s.seat)}</td>
+      <td>${s.sharpe_before.toFixed(2)}</td><td>${s.sharpe_after.toFixed(2)}</td>
+      <td>${s.diff >= 0 ? "+" : "−"}${Math.abs(s.diff).toFixed(2)}</td>
+      <td>[${s.ci95[0] >= 0 ? "+" : "−"}${Math.abs(s.ci95[0]).toFixed(2)}, ${s.ci95[1] >= 0 ? "+" : "−"}${Math.abs(s.ci95[1]).toFixed(2)}]</td>
+      <td>${s.weeks_changed} of ${L.weeks}</td>
+      <td>${s.ex2020_before.toFixed(2)} → ${s.ex2020_after.toFixed(2)}</td>
+      <td>${esc(s.verdict)}</td></tr>`).join("") + "</tbody>";
+  const last = L.steps[L.steps.length - 1];
+  document.getElementById("ladderNote").innerHTML =
+    `<b>Read this before believing the jump.</b> Both new seats lost money on their own — the fundamentals seat badly — yet the committee's Sharpe rose from ${last.sharpe_before.toFixed(2)} to ${last.sharpe_after.toFixed(2)}. That can happen when a poor signal is wrong at different times from everyone else, and it is the whole case for having a committee. But the interval still includes zero, so it is <b>not proven</b>. It does survive dropping 2020 (${last.ex2020_before.toFixed(2)} → ${last.ex2020_after.toFixed(2)}), which is more than the Phantom Flow seat managed.
+    <br>The mechanism is worth knowing: the fundamentals seat was bearish for most of the test and turned an undecided FLAT into a SHORT 19 times. A permanently bearish voice looks good in any sample containing a crash and poor in one without, so treat this as a finding that needs another cycle to confirm.`;
+}
+
 // ---------- the market's own view ----------
 function renderMarket() {
   const box = document.getElementById("mktbody");
@@ -474,7 +606,7 @@ function renderMarket() {
   box.innerHTML = `<p class="muted" style="margin:0;font-size:13px">Covered <b>${ME.weeks_covered} of ${ME.weeks_total}</b> weeks (${fmtDate(ME.first)} – ${fmtDate(ME.last)}), source <span class="num">${esc(ME.source || "—")}</span>. Everything below is measured on those weeks only: judging an expert over years it was absent for would be meaningless.</p>
     ${verdict}
     <div class="scroll"><table id="mktsub"><thead><tr><th>Expert, on the covered weeks only</th><th>Total return</th><th>Sharpe</th><th>Max drawdown</th><th>Hit rate</th><th>Time flat</th></tr></thead><tbody>` +
-    rows.map(n => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${esc(SHORTNAME[n])}</span></td>
+    rows.map(n => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name">${swatch(n)}${esc(SHORTNAME[n])}</span></td>
       <td>${pct(S[n].total_return)}</td><td>${S[n].sharpe.toFixed(2)}</td><td>${pct(S[n].max_drawdown)}</td>
       <td>${S[n].hit_rate == null ? "–" : pct0(S[n].hit_rate, 1)}</td><td>${pct0(S[n].time_flat)}</td></tr>`).join("") +
     `</tbody></table></div>`;
@@ -492,7 +624,7 @@ function renderScore() {
   S.sort((x, y) => ((x[1][sortKey] ?? -9) - (y[1][sortKey] ?? -9)) * sortDir);
   document.getElementById("score-sub").textContent = `${lab === "All" ? "Whole test period" : lab}: ${b - a + 1} weeks. Click a column to sort. Hit rate counts only weeks where the expert took a position.`;
   document.getElementById("score").innerHTML = `<thead><tr>${COLS.map(c => c[1] ? `<th class="sort" data-k="${c[1]}"${c[1] === sortKey ? ` aria-sort="${sortDir < 0 ? "descending" : "ascending"}"` : ""}>${c[0]}</th>` : `<th>${c[0]}</th>`).join("")}</tr></thead>
-    <tbody>${S.map(([n, s]) => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${esc(n)}</span></td>${COLS.slice(1).map(c => `<td>${c[2](s[c[1]])}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    <tbody>${S.map(([n, s]) => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name">${swatch(n)}${esc(n)}</span></td>${COLS.slice(1).map(c => `<td>${c[2](s[c[1]])}</td>`).join("")}</tr>`).join("")}</tbody>`;
 }
 document.getElementById("score").addEventListener("click", e => {
   const th = e.target.closest("th.sort"); if (!th) return;
@@ -508,7 +640,7 @@ function renderHeat() {
   const row = (n, cls) => `<div class="rowcells" style="grid-template-columns:${tmpl}">${cls.map((c, j) => `<span class="${c}${a + j === N ? " live" : ""}" data-i="${a + j}" data-n="${esc(n)}"></span>`).join("")}</div>`;
   const code = x => x === 1 ? "L" : x === -1 ? "S" : "F";
   let h = "";
-  NAMES.forEach(n => { h += `<div class="lab"><span class="swatch" style="background:${colorOf(n)}"></span>${SHORTNAME[n]}</div>` + row(n, D.action[n].slice(a, b + 1).map(code)); });
+  NAMES.forEach(n => { h += `<div class="lab">${swatch(n)}${SHORTNAME[n]}</div>` + row(n, D.action[n].slice(a, b + 1).map(code)); });
   const mk = []; for (let t = a; t <= b; t++) mk.push(t < N ? (D.price[t + 1] > D.price[t] ? "L" : "S") : "F");
   h += `<div class="sep"></div><div class="lab" style="font-weight:600;color:var(--ink)">Market next week</div>` + row("Market", mk);
   h += `<div></div><div class="axis"><span>${fmtDate(D.dates[a])}</span><span>${fmtDate(D.dates[b])}</span></div>`;
@@ -530,7 +662,7 @@ function renderStatic() {
   const yrs = Object.keys(D.yearly[ALL[0]]);
   const tint = v => { const k = Math.min(1, Math.abs(v)) * 38; return `background:color-mix(in oklab, var(${v >= 0 ? "--long" : "--short"}) ${k}%, var(--surface))`; };
   document.getElementById("yearly").innerHTML = `<thead><tr><th>Expert</th>${yrs.map(y => `<th>${y}${y === yrs[yrs.length - 1] ? "*" : ""}</th>`).join("")}</tr></thead><tbody>` +
-    ALL.map(n => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${SHORTNAME[n]}</span></td>${yrs.map(y => `<td style="${tint(D.yearly[n][y])}">${pct(D.yearly[n][y])}</td>`).join("")}</tr>`).join("") +
+    ALL.map(n => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name">${swatch(n)}${SHORTNAME[n]}</span></td>${yrs.map(y => `<td style="${tint(D.yearly[n][y])}">${pct(D.yearly[n][y])}</td>`).join("")}</tr>`).join("") +
     `</tbody><caption style="caption-side:bottom;text-align:left;font-size:12px;color:var(--ink3);padding-top:8px">* ${yrs[yrs.length - 1]} to ${fmtDate(M.test_end)}. Colour intensity follows the size of the return.</caption>`;
   document.getElementById("agree").innerHTML = `<thead><tr><th></th>${NAMES.map(n => `<th>${SHORTNAME[n]}</th>`).join("")}</tr></thead><tbody>` +
     NAMES.map(r => `<tr><td>${SHORTNAME[r]}</td>${NAMES.map(c => { const v = D.agreement[r][c]; return `<td style="background:color-mix(in oklab, var(--s1) ${r === c ? 0 : Math.round(v * 60)}%, var(--surface))">${r === c ? "–" : pct0(v)}</td>`; }).join("")}</tr>`).join("") + "</tbody>";
@@ -539,8 +671,8 @@ function renderStatic() {
 }
 
 function renderAll() { renderEquity(); renderPrice(); renderPF(); renderScore(); renderHeat(); }
-renderStatic(); renderPFStatic(); renderMarket(); renderAll();
-const rerender = () => { renderStatic(); renderPFStatic(); renderMarket(); renderAll(); };
+renderStatic(); renderPFStatic(); renderFamilies(); renderJepa(); renderFund(); renderLadder(); renderMarket(); renderAll();
+const rerender = () => { renderStatic(); renderPFStatic(); renderFamilies(); renderJepa(); renderFund(); renderLadder(); renderMarket(); renderAll(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
 new MutationObserver(rerender).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
 </script>
