@@ -92,6 +92,7 @@ python panel_backtest.py        # downloads the data to ../data/, about 12 minut
 python fetch_markets.py         # optional: prediction-market data (needs internet)
 python pf_effect.py             # did Phantom Flow really help? (bootstrap, ex-2020)
 python chair_effect.py          # did every added seat help? (the full ladder, 5 -> 6 -> 7 -> 9)
+node code/export_dashboard_pdf.js   # optional: the dashboard as a printable A4 PDF (needs playwright)
 python make_dashboard.py        # rebuilds ../dashboard/index.html
 pytest -q ../tests              # Phantom Flow tests, including the no-hindsight check
 export TYPESAFE_API_KEY=...     # optional: use the real Jev instead of the stand-in
@@ -113,6 +114,7 @@ All seeds are fixed, so re-running should reproduce these numbers.
 | `tests/test_prediction_market.py` | 20 tests: question parsing, a symmetric ladder giving zero lean, a common premium cancelling, abstention instead of extrapolation, the touch→close halving, and the documented API response shapes |
 | `code/jev_market.py` | Jev API client and the offline stand-in |
 | `code/dashboard_template.html`, `code/make_dashboard.py` | The dashboard |
+| `code/export_dashboard_pdf.js` | The dashboard as a printable A4 landscape PDF: pins the light theme, opens the scrolling boxes so no table is cut off, and keeps cards and tables off page breaks |
 | `outputs/` | `panel_results.json`, `weekly_signals.csv`, `performance_summary.csv`, `yearly_returns.csv`, `weekly_features.csv`, `phantom_flow_daily.csv`, `phantom_flow_sensitivity.csv`, `phantom_flow_effect.json` |
 | `dashboard/index.html` | Self-contained dashboard; needs internet for the chart library and fonts |
 | `docs/` | Plain-English guide (Markdown and Word) and dashboard screenshots |

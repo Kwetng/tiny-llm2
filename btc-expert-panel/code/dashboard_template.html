@@ -294,6 +294,7 @@ footer a{color:var(--ink2)}
 const D = /*__DATA__*/null;
 const NAMES = D.experts, BENCH = D.benchmarks, ALL = [...NAMES, ...BENCH], CHAIR = "Panel chair (consensus)", OLD = "Chair without Phantom Flow";
 const EXPERTS = NAMES.filter(n => n !== CHAIR), NOMKT = "Chair without the market", MKT = "Market consensus";
+const NONEW = "Chair without JEPA + fundamentals";
 const ME = D.market_eval || {weeks_covered: 0, subperiod: {}, benchmark: null};
 const N = D.n_done;
 const SRC = {"Random Forest":"projectskf · quant research","Tabular Transformer":"projectskf · quant research",
@@ -359,7 +360,7 @@ const best = NAMES.reduce((a, b) => FULL[a].sharpe > FULL[b].sharpe ? a : b);
 document.getElementById("verdict").innerHTML = `
   <div><span class="eyebrow">Panel verdict</span><div class="big"><span class="pill big ${chairNow.action}">${chairNow.action}</span>
     <span class="num" style="font-size:16px;font-weight:500;color:var(--ink2)">${tallyL} long · ${EXPERTS.length - tallyL - tallyS} flat · ${tallyS} short</span></div>
-    <span class="muted" style="font-size:13px">Average P(up) across the six experts: <span class="num">${pct0(chairNow.p_up)}</span> · without Phantom Flow the chair would say <b>${LBL[D.action[OLD][D.action[OLD].length - 1]]}</b></span></div>
+    <span class="muted" style="font-size:13px">Average P(up) across the ${EXPERTS.length} experts: <span class="num">${pct0(chairNow.p_up)}</span> · before the two newest seats the chair would say <b>${LBL[D.action[NONEW][D.action[NONEW].length - 1]]}</b></span></div>
   <div><span class="eyebrow">Best Sharpe since ${M.test_start.slice(0, 4)}</span><span class="stat">${FULL[best].sharpe.toFixed(2)}</span><span class="muted" style="font-size:13px">${SHORTNAME[best]} · buy &amp; hold ${FULL["Buy & hold"].sharpe.toFixed(2)}</span></div>
   <div><span class="eyebrow">Panel chair drawdown</span><span class="stat">${pct(FULL[CHAIR].maxdd)}</span><span class="muted" style="font-size:13px">buy &amp; hold ${pct(FULL["Buy & hold"].maxdd)}</span></div>
   <div><span class="eyebrow">Phantom Flow · last day of data</span><span class="stat" style="font-size:18px"><span class="pill ${LBL[PFD.call[pfLast]]}">${LBL[PFD.call[pfLast]]}</span></span><span class="muted" style="font-size:13px">${fmtDate(PFD.dates[pfLast])}: shift ${UPDN(PFD.shift[pfLast])} · structure ${UPDN(PFD.structure[pfLast])} · oscillator <span class="num">${PFD.osc[pfLast] >= 0 ? "+" : "−"}${Math.abs(PFD.osc[pfLast]).toFixed(2)}</span> ATR. Its weekly vote on ${fmtDate(M.live_week)} was ${live["Phantom Flow"].action}.</span></div>`;
