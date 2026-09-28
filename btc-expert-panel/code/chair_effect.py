@@ -32,7 +32,8 @@ BLOCK, N_BOOT = 8, 4000
 # each step of the ladder: (label, key of the earlier chair, key of the later chair)
 LADDER = [("Phantom Flow", "old_chair", "no_mkt_chair"),
           ("the market seat", "no_mkt_chair", "no_new_chair"),
-          ("chart JEPA + fundamentals", "no_new_chair", "chair")]
+          ("chart JEPA + fundamentals", "no_new_chair", "no_qh_chair"),
+          ("quantum NN + regime HMM", "no_qh_chair", "chair")]
 
 
 def sharpe(r):

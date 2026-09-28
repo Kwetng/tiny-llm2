@@ -34,7 +34,7 @@ const PRINT_CSS = `
      of a page. The few panels that are genuinely taller than one page are allowed to split. */
   .panel { break-inside: avoid; page-break-inside: avoid; }
   section[aria-labelledby="score-h"], section[aria-labelledby="board-h"],
-  section[aria-labelledby="new-h"], section[aria-labelledby="pf-h"],
+  section[aria-labelledby="jf-h"], section[aria-labelledby="new-h"], section[aria-labelledby="pf-h"],
   .notes section, .seats { break-inside: auto; page-break-inside: auto; }
   /* a heading and its blurb must not be stranded at the foot of a page without the chart */
   .panel-head, .panel > p, .legend { break-after: avoid; page-break-after: avoid; }

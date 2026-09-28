@@ -16,9 +16,20 @@ Experts (each gives a weekly LONG / FLAT / SHORT call for the next 7 days):
                                 the crowd pays for a +10% move against an equidistant -10% move (see
                                 prediction_market.py). ABSTAINS (FLAT) on every week with no liquid market,
                                 which is most of 2020-2024, because these markets did not exist then.
-  8. Panel chair (consensus)  - LONG or SHORT only if at least 3 experts agree AND more agree than oppose,
-                                otherwise FLAT. Two earlier chairs are kept as benchmarks: "Chair without
-                                Phantom Flow" (3 of 5) and "Chair without the market" (3 of 6).
+  8. Chart JEPA               - a joint embedding predictive architecture reads the last 52 weekly closes as a
+                                24x52 picture and predicts the embedding of the next few weeks, never the pixels
+  9. Fundamentals             - four on-chain valuation measures (MVRV, Puell multiple, hash ribbon, a Metcalfe-
+                                law residual), each a trailing z-score against its own four-year norm
+ 10. Quantum NN                - a 6-qubit variational circuit (simulated exactly; RY + CNOT only, so every
+                                amplitude is real) with data re-uploading; 25 trained parameters in all. Real
+                                quantum mechanics, no claimed quantum advantage - see quantum_nn.py.
+ 11. HMM Regime                - a 3-state Gaussian hidden Markov model over weekly return and volatility,
+                                FORWARD-FILTERED only (never smoothed) so it never sees the future; votes the
+                                exact mixture probability that next week is positive - see hmm_regime.py.
+ 12. Panel chair (consensus)  - LONG or SHORT only if at least 3 experts agree AND more agree than oppose,
+                                otherwise FLAT. Four earlier chairs are kept as benchmarks: "Chair without
+                                Phantom Flow" (3 of 5), "Chair without the market" (3 of 6), "Chair without
+                                JEPA + fundamentals" (3 of 7) and "Chair without quantum + regime" (3 of 9).
 
 Data: Coin Metrics community data (CC BY-NC 4.0) - price, MVRV, active addresses, hash rate,
 exchange flows - plus the CBOE VIX (datasets/finance-vix). Both are fetched from GitHub.
@@ -49,6 +60,8 @@ import phantom_flow
 import prediction_market
 import chart_jepa
 import fundamentals
+import quantum_nn
+import hmm_regime
 
 OFFLINE = "--offline" in sys.argv
 HERE = Path(__file__).resolve().parent
@@ -265,10 +278,12 @@ def to_action(p):
 jev = get_jev(offline=OFFLINE)
 print(f"Jev: {jev.name}")
 EXPERTS = ["Random Forest", "Tabular Transformer", "Neuroplastic World Model", "Jev (System One)",
-           "Mini LLM tape reader", "Phantom Flow", "Market consensus", "Chart JEPA", "Fundamentals"]
+           "Mini LLM tape reader", "Phantom Flow", "Market consensus", "Chart JEPA", "Fundamentals",
+           "Quantum NN", "HMM Regime"]
 OLD_CHAIR = "Chair without Phantom Flow"          # the original 5-expert rule, kept for comparison
 NO_MKT_CHAIR = "Chair without the market"         # the 6-expert rule, to isolate what expert 7 adds
-NO_NEW_CHAIR = "Chair without JEPA + fundamentals"   # the 7-expert rule, before today's two seats
+NO_NEW_CHAIR = "Chair without JEPA + fundamentals"   # the 7-expert rule, before the JEPA+fundamentals pair
+NO_QH_CHAIR = "Chair without quantum + regime"       # the 9-expert rule, before today's two seats
 MKT = prediction_market.WeeklySignals(DATA / "prediction_market.json")
 print(f"Prediction market: {len(MKT)} weeks cached"
       + ("" if MKT.available else " - none. Expert 7 abstains on every week; run code/fetch_markets.py."))
@@ -276,8 +291,12 @@ CHARTS, CHART_DATES = chart_jepa.build_charts(wk.price, wk.index)
 CHART_AT = {d: i for i, d in enumerate(CHART_DATES)}
 FUND = fundamentals.daily_metrics(day).reindex(wk.index)
 UP_NEXT = (wk.next_ret > 0).astype(int).values
+WK_POS = {d: i for i, d in enumerate(wk.index)}                     # positional index, for the HMM's forward filter
+HMM_OBS = hmm_regime.observations(wk)
 print(f"Chart JEPA: {len(CHARTS)} rendered charts ({chart_jepa.ROWS}x{chart_jepa.WINDOW}, "
-      f"{chart_jepa.N_PATCH} strips) | Fundamentals: {', '.join(fundamentals.METRICS)}")
+      f"{chart_jepa.N_PATCH} strips) | Fundamentals: {', '.join(fundamentals.METRICS)} | "
+      f"Quantum NN: {quantum_nn.N_QUBITS} qubits, {quantum_nn.N_LAYERS} layers | "
+      f"HMM: {hmm_regime.N_STATES} states")
 
 rows = []
 test = wk.loc[f"{TEST_START}-01-01":]
@@ -296,6 +315,13 @@ for year in sorted(set(test.index.year)):
     fmask = (wk.index < f"{year}-01-01") & wk.next_ret.notna().values
     fund = fundamentals.FundamentalModel().fit(FUND, fmask, UP_NEXT)
     fund_z = fund.composite(FUND)
+    qexp = quantum_nn.QuantumExpert(seed=year, steps=300).fit(
+        tr[quantum_nn.FEATURES].values.astype(float), (tr.next_ret > 0).astype(int).values)
+    train_end_pos = WK_POS[tr.index[-1]] + 1                        # positions strictly before the test year
+    test_year_dates = test[test.index.year == year].index
+    filter_end_pos = WK_POS[test_year_dates[-1]] + 1
+    hmm = hmm_regime.RegimeHMM(seed=year).fit(HMM_OBS[:train_end_pos])
+    hmm_filtered = hmm.filter(HMM_OBS[:filter_end_pos])              # forward pass only: causal by construction
     imp = sorted(zip(FEATURES, rf.feature_importances_), key=lambda t: -t[1])[:3]
     for date, row in test[test.index.year == year].iterrows():
         x = sc.transform(row[FEATURES].values.reshape(1, -1).astype(float))
@@ -317,11 +343,17 @@ for year in sorted(set(test.index.year)):
         mkt = MKT.get(date)                           # None on weeks with no liquid contract
         mkt_lean = None if mkt is None else float(mkt["lean"])
         p_mkt = 0.5 if mkt_lean is None else prediction_market.p_up_from_lean(mkt_lean)
+        p_qnn = qexp.p_up(row[quantum_nn.FEATURES].values.astype(float))
+        qz = qexp.measurements(row[quantum_nn.FEATURES].values.astype(float))
+        hrow = hmm_filtered[WK_POS[date]]                            # forward-filtered state probs up to this week
+        p_hmm = hmm.p_up_next(hrow)
+        hmm_desc = hmm.describe(hrow)
         acts = {"Random Forest": to_action(p_rf), "Tabular Transformer": to_action(p_tf),
                 "Neuroplastic World Model": {"BUY": 1, "SELL": -1, "HOLD": 0}[v5_sig],
                 "Jev (System One)": to_action(p_jev), "Mini LLM tape reader": to_action(p_llm),
                 "Phantom Flow": int(pf.call), "Market consensus": prediction_market.vote(mkt_lean),
-                "Chart JEPA": to_action(p_jepa), "Fundamentals": fundamentals.vote(fz)}
+                "Chart JEPA": to_action(p_jepa), "Fundamentals": fundamentals.vote(fz),
+                "Quantum NN": to_action(p_qnn), "HMM Regime": to_action(p_hmm)}
         old5 = [acts[e] for e in EXPERTS[:5]]
         acts[OLD_CHAIR] = 1 if old5.count(1) >= 3 else -1 if old5.count(-1) >= 3 else 0
         six = [acts[e] for e in EXPERTS[:6]]
@@ -330,17 +362,24 @@ for year in sorted(set(test.index.year)):
         sev = [acts[e] for e in EXPERTS[:7]]
         nl7, ns7 = sev.count(1), sev.count(-1)
         acts[NO_NEW_CHAIR] = 1 if (nl7 >= 3 and nl7 > ns7) else -1 if (ns7 >= 3 and ns7 > nl7) else 0
+        nine = [acts[e] for e in EXPERTS[:9]]
+        nl9, ns9 = nine.count(1), nine.count(-1)
+        acts[NO_QH_CHAIR] = 1 if (nl9 >= 3 and nl9 > ns9) else -1 if (ns9 >= 3 and ns9 > nl9) else 0
         n_long, n_short = sum(acts[e] == 1 for e in EXPERTS), sum(acts[e] == -1 for e in EXPERTS)
         acts["Panel chair (consensus)"] = 1 if (n_long >= 3 and n_long > n_short) else -1 if (n_short >= 3 and n_short > n_long) else 0
         rows.append({"date": date, "price": row.price, "next_ret": row.next_ret,
                      "p": {"Random Forest": p_rf, "Tabular Transformer": p_tf, "Neuroplastic World Model": p_v5,
                            "Jev (System One)": p_jev, "Mini LLM tape reader": p_llm, "Phantom Flow": p_pf,
                            "Market consensus": p_mkt, "Chart JEPA": p_jepa, "Fundamentals": p_fund,
+                           "Quantum NN": p_qnn, "HMM Regime": p_hmm,
                            OLD_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm])),
                            NO_MKT_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm, p_pf])),
                            NO_NEW_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm, p_pf])),
-                           "Panel chair (consensus)": float(np.mean(
+                           NO_QH_CHAIR: float(np.mean(
                                [p_rf, p_tf, p_v5, p_jev, p_llm, p_pf, p_jepa, p_fund]
+                               + ([p_mkt] if mkt_lean is not None else []))),
+                           "Panel chair (consensus)": float(np.mean(
+                               [p_rf, p_tf, p_v5, p_jev, p_llm, p_pf, p_jepa, p_fund, p_qnn, p_hmm]
                                + ([p_mkt] if mkt_lean is not None else [])))},
                      "action": acts,
                      "detail": {"rf_top_features": [(f, round(float(v), 3)) for f, v in imp], "v5_votes": vc, "v5_pred": v5_mu,
@@ -349,7 +388,11 @@ for year in sorted(set(test.index.year)):
                                 "jepa": {"collapse": round(jepa.collapse_score(), 3)},
                                 "fund": {"z": None if pd.isna(fz) else round(fz, 2), **fund.explain(FUND.loc[:date])},
                                 "pf": {"shift": int(pf["shift"]), "structure": int(pf.structure), "osc": float(pf.osc),
-                                       "stop": float(pf.stop), "score": int(pf.score)}}})
+                                       "stop": float(pf.stop), "score": int(pf.score)},
+                                "qnn": {"z": [round(float(v), 3) for v in qz]},
+                                "hmm": {"state": hmm_desc["state"], "label": hmm_desc["label"],
+                                        "confidence": round(hmm_desc["confidence"], 3),
+                                        "probs": [round(float(v), 3) for v in hrow]}}})
     print(f"  {year}: trained on {len(tr)} weeks, predicted {sum(test.index.year == year)} weeks ({time.time() - t0:.0f}s)")
 print(f"walk-forward done in {time.time() - t_all:.0f}s")
 
@@ -357,7 +400,7 @@ print(f"walk-forward done in {time.time() - t_all:.0f}s")
 # 4. PERFORMANCE
 # =============================================================================
 NAMES = EXPERTS + ["Panel chair (consensus)"]
-BENCH = [NO_NEW_CHAIR, NO_MKT_CHAIR, OLD_CHAIR, "Buy & hold"]
+BENCH = [NO_QH_CHAIR, NO_NEW_CHAIR, NO_MKT_CHAIR, OLD_CHAIR, "Buy & hold"]
 dates = [r["date"] for r in rows]
 done = [r for r in rows if not pd.isna(r["next_ret"])]          # weeks whose outcome is known
 simple = np.array([math.expm1(r["next_ret"]) for r in done])
@@ -493,6 +536,12 @@ why = {
                          f"{fundamentals.PLAIN[k]} {d['fund'][k]:+.2f}" for k in fundamentals.METRICS
                          if d['fund'].get(k) is not None) + "."
                      ) if d["fund"]["z"] is not None else "Not enough history yet for a valuation score.",
+    "Quantum NN": (f"A {quantum_nn.N_QUBITS}-qubit circuit read momentum, volatility, valuation and VIX as rotation "
+                   f"angles; six qubit measurements &lt;Z&gt;: [" + ", ".join(f"{v:+.2f}" for v in d["qnn"]["z"])
+                   + f"]. Simulated exactly; 25 trained parameters; no quantum advantage is claimed."),
+    "HMM Regime": (f"Filtered state (using only weeks up to this one): <b>{d['hmm']['label']}</b>, "
+                   f"{d['hmm']['confidence']:.0%} confident. State probabilities [" +
+                   ", ".join(f"{v:.0%}" for v in d["hmm"]["probs"]) + "]."),
     "Panel chair (consensus)": f"{d['n_long']} of {len(EXPERTS)} experts LONG, {d['n_short']} SHORT; needs 3 and a majority of those taking a side.",
 }
 # ---- Phantom Flow: daily series for the dashboard + parameter sensitivity (reported, not used to choose) ----
@@ -542,8 +591,15 @@ result = {"generated": time.strftime("%Y-%m-%d"), "decision_model": jev.name, "a
                    "n_patch": chart_jepa.N_PATCH, "n_context": chart_jepa.N_CONTEXT, "emb": chart_jepa.EMB},
           "fundamentals": {"metrics": fundamentals.METRICS, "plain": fundamentals.PLAIN, "vote_z": fundamentals.VOTE_Z,
                            "weekly": [r["detail"]["fund"] for r in rows]},
+          "quantum": {"qubits": quantum_nn.N_QUBITS, "layers": quantum_nn.N_LAYERS,
+                     "params": qexp.stats["params"], "features": quantum_nn.FEATURES,
+                     "weekly": [r["detail"]["qnn"] for r in rows]},
+          "hmm": {"states": hmm_regime.N_STATES, "labels": hmm.labels(),
+                 "mean_weekly_return": hmm.stats["mean_weekly_return"], "weekly_vol": hmm.stats["weekly_vol"],
+                 "persistence": hmm.stats["persistence"], "weekly": [r["detail"]["hmm"] for r in rows]},
           "old_chair": {"action": [int(r["action"][OLD_CHAIR]) for r in rows], "p": [float(r["p"][OLD_CHAIR]) for r in rows]},
           "no_mkt_chair": {"action": [int(r["action"][NO_MKT_CHAIR]) for r in rows], "p": [float(r["p"][NO_MKT_CHAIR]) for r in rows]},
+          "no_qh_chair": {"action": [int(r["action"][NO_QH_CHAIR]) for r in rows], "p": [float(r["p"][NO_QH_CHAIR]) for r in rows]},
           "market_eval": market_eval,
           "market_weekly": [r["detail"]["market"] for r in rows],
           "phantom_flow": pf_daily, "pf_sensitivity": pf_sens, "pf_params": phantom_flow.DEFAULTS,
@@ -556,6 +612,7 @@ pd.DataFrame({"date": result["dates"], "price": result["price"],
               f"{OLD_CHAIR} action": result["old_chair"]["action"],
               f"{NO_MKT_CHAIR} action": result["no_mkt_chair"]["action"],
               f"{NO_NEW_CHAIR} action": result["no_new_chair"]["action"],
+              f"{NO_QH_CHAIR} action": result["no_qh_chair"]["action"],
               "Jev regime": result["regime"]}).to_csv(OUT / "weekly_signals.csv", index=False)
 pd.DataFrame({n: {k: v for k, v in m.items() if k not in ("equity", "yearly")} for n, m in perf.items()}).T.to_csv(OUT / "performance_summary.csv")
 pd.DataFrame({n: m["yearly"] for n, m in perf.items()}).T.to_csv(OUT / "yearly_returns.csv")

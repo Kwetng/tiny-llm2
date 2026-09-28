@@ -53,6 +53,23 @@
    "ex2020_after": 0.7160920232578792,
    "survives_ex2020": true,
    "verdict": "not proven: the interval includes zero"
+  },
+  {
+   "seat": "quantum NN + regime HMM",
+   "sharpe_before": 1.2100787524285457,
+   "sharpe_after": 1.0722723208163698,
+   "diff": -0.13780643161217587,
+   "ci95": [
+    -0.47544009112445346,
+    0.17492850259948703
+   ],
+   "p_no_better": 0.80575,
+   "weeks_changed": 54,
+   "share_changed": 0.16265060240963855,
+   "ex2020_before": 0.7160920232578792,
+   "ex2020_after": 0.5184962948951799,
+   "survives_ex2020": false,
+   "verdict": "not proven: the interval includes zero"
   }
  ]
 }

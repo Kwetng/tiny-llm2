@@ -14,6 +14,8 @@ R["action"]["Chair without the market"] = R["no_mkt_chair"]["action"]
 R["p"]["Chair without the market"] = R["no_mkt_chair"]["p"]
 R["action"]["Chair without JEPA + fundamentals"] = R["no_new_chair"]["action"]
 R["p"]["Chair without JEPA + fundamentals"] = R["no_new_chair"]["p"]
+R["action"]["Chair without quantum + regime"] = R["no_qh_chair"]["action"]
+R["p"]["Chair without quantum + regime"] = R["no_qh_chair"]["p"]
 data = {
     "experts": R["experts"], "dates": R["dates"], "price": [round(p, 2) for p in R["price"]],
     "p": {k: [round(v, 3) for v in vs] for k, vs in R["p"].items()},
@@ -24,6 +26,7 @@ data = {
     "phantom_flow": R["phantom_flow"], "pf_sensitivity": R["pf_sensitivity"],
     "pf_effect": json.load(open(ROOT / "outputs" / "phantom_flow_effect.json")),
     "market_eval": R["market_eval"], "jepa": R["jepa"], "fundamentals": R["fundamentals"],
+    "quantum": R["quantum"], "hmm": R["hmm"],
     "chair_effect": json.load(open(ROOT / "outputs" / "chair_effect.json")),
     "meta": {k: R[k] for k in ("decision_model", "data_to", "live_week", "live_price", "test_start", "test_end", "cost_bp", "thresholds", "generated")},
 }

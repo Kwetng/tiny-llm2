@@ -1,5 +1,5 @@
 <title>BTC Expert Panel</title>
-<meta name="description" content="Nine experts in five families - machine learning, latent world models, decision models, a technical indicator and outside views - call Bitcoin's next week, backtested walk-forward since 2020.">
+<meta name="description" content="Eleven experts in six families - machine learning, latent state models, decision models, a technical indicator and outside views - call Bitcoin's next week, backtested walk-forward since 2020.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -74,6 +74,7 @@ header .facts b{color:var(--ink);font-weight:500}
 .seat h3{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
 .swatch{width:10px;height:10px;border-radius:2px;flex:none}
 .swatch.alt{background:transparent!important;box-shadow:inset 0 0 0 2px var(--sw)}
+.swatch.alt2{background:repeating-linear-gradient(45deg,var(--sw) 0 2px,transparent 2px 4px)!important}
 .fam{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--ink2);margin-top:2px}
 .fam span{display:inline-flex;align-items:center;gap:6px}
 .zbar{position:relative;height:18px;margin:2px 0 6px}
@@ -211,9 +212,9 @@ footer a{color:var(--ink2)}
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"><div class="scroll"><table class="matrix sens" id="sens"></table></div><div class="scroll"><table class="matrix sens" id="sens2"></table></div></div>
   </section>
 
-  <section class="panel" aria-labelledby="new-h">
+  <section class="panel" aria-labelledby="jf-h">
     <div class="panel-head">
-      <h2 id="new-h">The two newest seats</h2>
+      <h2 id="jf-h">Chart pattern and on-chain valuation</h2>
       <p>One reads the chart as a picture; the other ignores the chart entirely and asks what Bitcoin is worth. They were added together, so their effect is measured against the seven-expert chair.</p>
     </div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
@@ -228,6 +229,27 @@ footer a{color:var(--ink2)}
         <p class="muted" style="margin:0 0 10px;font-size:13px">Each is scored against its own previous four years, then signed so <b>right of centre is bullish</b>. The seat votes only when their average passes ±<span id="fvz"></span>.</p>
         <div id="fundBars"></div>
         <div id="fundNote" class="muted" style="font-size:12px;margin-top:6px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="new-h">
+    <div class="panel-head">
+      <h2 id="new-h">The two newest seats: quantum and regime</h2>
+      <p>One is a real (simulated) quantum circuit reading momentum, valuation and volatility as rotation angles; the other is a hidden Markov model that names which market regime we are in, using only weeks that have already happened. They were added together, so their effect is measured against the nine-expert chair.</p>
+    </div>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+      <div>
+        <h3 style="font-size:16px;margin-bottom:6px">Quantum NN — six qubit measurements</h3>
+        <p class="muted" style="margin:0 0 10px;font-size:13px">&lt;Z&gt; on each of the six qubits after the circuit runs on this week's features, each in [-1, +1]. A classical linear layer turns these six numbers into P(up). Simulated exactly on <span id="qnnQubits"></span> qubits / <span id="qnnParams"></span> parameters — real quantum mechanics, no claimed quantum advantage.</p>
+        <div id="qnnBars"></div>
+        <div id="qnnNote" class="muted" style="font-size:12px;margin-top:6px"></div>
+      </div>
+      <div>
+        <h3 style="font-size:16px;margin-bottom:6px">HMM Regime — filtered state probabilities</h3>
+        <p class="muted" style="margin:0 0 10px;font-size:13px">Where the model thinks we are right now, using <b>only</b> weeks up to and including this one (forward-filtered, never smoothed — smoothing would look into the future). Each state's own average weekly return and volatility appear below.</p>
+        <div id="hmmBars"></div>
+        <div id="hmmNote" class="muted" style="font-size:12px;margin-top:6px"></div>
       </div>
     </div>
     <div class="panel-head" style="margin-top:10px"><h3 style="font-size:16px">Did each new seat actually help?</h3>
@@ -294,36 +316,40 @@ footer a{color:var(--ink2)}
 const D = /*__DATA__*/null;
 const NAMES = D.experts, BENCH = D.benchmarks, ALL = [...NAMES, ...BENCH], CHAIR = "Panel chair (consensus)", OLD = "Chair without Phantom Flow";
 const EXPERTS = NAMES.filter(n => n !== CHAIR), NOMKT = "Chair without the market", MKT = "Market consensus";
-const NONEW = "Chair without JEPA + fundamentals";
+const NONEW = "Chair without JEPA + fundamentals", NOQH = "Chair without quantum + regime";
 const ME = D.market_eval || {weeks_covered: 0, subperiod: {}, benchmark: null};
 const N = D.n_done;
 const SRC = {"Random Forest":"projectskf · quant research","Tabular Transformer":"projectskf · quant research",
   "Neuroplastic World Model":"neuroplastic-financial-world-model · V5","Jev (System One)":"TypeSafe AI · offline stand-in",
   "Mini LLM tape reader":"tiny-llm2 · mini_gpt","Phantom Flow":"indicator · open re-implementation","Market consensus":"prediction market · not a model",
   "Chart JEPA":"joint embedding predictive architecture","Fundamentals":"on-chain valuation",
-  "Panel chair (consensus)":"panel rule · 3 of 9 and a majority of those taking a side"};
+  "Quantum NN":"6-qubit variational circuit · simulated","HMM Regime":"Gaussian hidden Markov model · forward-filtered",
+  "Panel chair (consensus)":"panel rule · 3 of 11 and a majority of those taking a side"};
 const SHORTNAME = {"Random Forest":"Random Forest","Tabular Transformer":"Transformer","Neuroplastic World Model":"Neuroplastic",
   "Jev (System One)":"Jev","Mini LLM tape reader":"Mini LLM","Phantom Flow":"Phantom Flow","Market consensus":"Market","Chart JEPA":"Chart JEPA","Fundamentals":"Fundamentals",
+  "Quantum NN":"Quantum NN","HMM Regime":"HMM Regime",
   "Panel chair (consensus)":"Panel chair",[OLD]:"Chair: 5 experts",[NOMKT]:"Chair: 6 experts",
-  "Chair without JEPA + fundamentals":"Chair: 7 experts","Buy & hold":"Buy & hold"};
-// Nine experts is more than any categorical palette can carry, so colour encodes the FAMILY an
-// expert belongs to and the line style separates the two members inside a family.
+  "Chair without JEPA + fundamentals":"Chair: 7 experts","Chair without quantum + regime":"Chair: 9 experts","Buy & hold":"Buy & hold"};
+// Eleven experts is more than any categorical palette can carry, so colour encodes the FAMILY an
+// expert belongs to and the line style/fill separates up to three members inside a family.
 const FAMILY = {
-  "Random Forest": ["f1", 0], "Tabular Transformer": ["f1", 1],
+  "Random Forest": ["f1", 0], "Tabular Transformer": ["f1", 1], "Quantum NN": ["f1", 2],
   "Jev (System One)": ["f2", 0], "Mini LLM tape reader": ["f2", 1],
-  "Neuroplastic World Model": ["f3", 0], "Chart JEPA": ["f3", 1],
+  "Neuroplastic World Model": ["f3", 0], "Chart JEPA": ["f3", 1], "HMM Regime": ["f3", 2],
   "Phantom Flow": ["f4", 0],
   "Market consensus": ["f5", 0], "Fundamentals": ["f5", 1],
   "Panel chair (consensus)": ["f6", 0]};
 const FAMILY_NAME = {f1: "Learned from price history", f2: "Decision and language models",
-                     f3: "Latent world models", f4: "Technical indicator", f5: "Outside views",
+                     f3: "Latent state models", f4: "Technical indicator", f5: "Outside views",
                      f6: "The committee"};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const famOf = n => (FAMILY[n] || ["", 0])[0];
-const isAlt = n => (FAMILY[n] || ["", 0])[1] === 1;
+const famIdx = n => (FAMILY[n] || ["", 0])[1];
+const isAlt = n => famIdx(n) === 1;
+const isAlt2 = n => famIdx(n) === 2;
 const colorOf = n => FAMILY[n] ? css("--" + famOf(n)) : n === "Buy & hold" ? css("--bh") : css("--ink3");
-const dashOf = n => n === "Buy & hold" ? [6, 4] : !FAMILY[n] ? [2, 3] : isAlt(n) ? [3, 3] : [];
-const swatch = n => `<span class="swatch${isAlt(n) ? " alt" : ""}" style="background:${colorOf(n)};--sw:${colorOf(n)}"></span>`;
+const dashOf = n => n === "Buy & hold" ? [6, 4] : !FAMILY[n] ? [2, 3] : famIdx(n) === 1 ? [3, 3] : famIdx(n) === 2 ? [1, 3] : [];
+const swatch = n => `<span class="swatch${isAlt(n) ? " alt" : isAlt2(n) ? " alt2" : ""}" style="background:${colorOf(n)};--sw:${colorOf(n)}"></span>`;
 const pct = (v, d = 0) => { const s = Math.abs(v * 100).toFixed(d); return (+s === 0 ? "" : v >= 0 ? "+" : "−") + s + "%"; };
 const pct0 = (v, d = 0) => (v * 100).toFixed(d) + "%";
 const fmtDate = s => new Date(s + "T00:00:00Z").toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"});
@@ -360,7 +386,7 @@ const best = NAMES.reduce((a, b) => FULL[a].sharpe > FULL[b].sharpe ? a : b);
 document.getElementById("verdict").innerHTML = `
   <div><span class="eyebrow">Panel verdict</span><div class="big"><span class="pill big ${chairNow.action}">${chairNow.action}</span>
     <span class="num" style="font-size:16px;font-weight:500;color:var(--ink2)">${tallyL} long · ${EXPERTS.length - tallyL - tallyS} flat · ${tallyS} short</span></div>
-    <span class="muted" style="font-size:13px">Average P(up) across the ${EXPERTS.length} experts: <span class="num">${pct0(chairNow.p_up)}</span> · before the two newest seats the chair would say <b>${LBL[D.action[NONEW][D.action[NONEW].length - 1]]}</b></span></div>
+    <span class="muted" style="font-size:13px">Average P(up) across the ${EXPERTS.length} experts: <span class="num">${pct0(chairNow.p_up)}</span> · before the two newest seats (quantum NN + regime HMM) the chair would say <b>${LBL[D.action[NOQH][D.action[NOQH].length - 1]]}</b></span></div>
   <div><span class="eyebrow">Best Sharpe since ${M.test_start.slice(0, 4)}</span><span class="stat">${FULL[best].sharpe.toFixed(2)}</span><span class="muted" style="font-size:13px">${SHORTNAME[best]} · buy &amp; hold ${FULL["Buy & hold"].sharpe.toFixed(2)}</span></div>
   <div><span class="eyebrow">Panel chair drawdown</span><span class="stat">${pct(FULL[CHAIR].maxdd)}</span><span class="muted" style="font-size:13px">buy &amp; hold ${pct(FULL["Buy & hold"].maxdd)}</span></div>
   <div><span class="eyebrow">Phantom Flow · last day of data</span><span class="stat" style="font-size:18px"><span class="pill ${LBL[PFD.call[pfLast]]}">${LBL[PFD.call[pfLast]]}</span></span><span class="muted" style="font-size:13px">${fmtDate(PFD.dates[pfLast])}: shift ${UPDN(PFD.shift[pfLast])} · structure ${UPDN(PFD.structure[pfLast])} · oscillator <span class="num">${PFD.osc[pfLast] >= 0 ? "+" : "−"}${Math.abs(PFD.osc[pfLast]).toFixed(2)}</span> ATR. Its weekly vote on ${fmtDate(M.live_week)} was ${live["Phantom Flow"].action}.</span></div>`;
@@ -517,7 +543,7 @@ function renderFamilies() {
   document.getElementById("famlegend").innerHTML = seen.map(f => {
     const mem = NAMES.filter(n => famOf(n) === f);
     return `<span><span class="swatch" style="background:${css("--" + f)}"></span>${esc(FAMILY_NAME[f])}${mem.length > 1 ? ` <span class="muted">(${mem.length})</span>` : ""}</span>`;
-  }).join("") + `<span class="muted">solid = first in family, dotted = second</span>`;
+  }).join("") + `<span class="muted">solid = first in family, ring/dashed = second, striped/dotted = third</span>`;
 }
 
 function renderJepa() {
@@ -569,21 +595,56 @@ function renderFund() {
     : `Average <b>${last.z >= 0 ? "+" : "−"}${Math.abs(last.z).toFixed(2)}</b>, so the seat is <b>${LBL[fa[fa.length - 1]]}</b>. Bars are standard deviations from each measure's own four-year norm; left of centre is bearish.`;
 }
 
+function renderQuantum() {
+  const Q = D.quantum, last = Q.weekly[Q.weekly.length - 1];
+  document.getElementById("qnnQubits").textContent = Q.qubits;
+  document.getElementById("qnnParams").textContent = Q.params;
+  document.getElementById("qnnBars").innerHTML = last.z.map((v, i) => {
+    const w = Math.min(Math.abs(v), 1) * 50;
+    const col = v >= 0 ? css("--long") : css("--short");
+    return `<div class="zrow"><span class="lab">qubit ${i} (${esc(Q.features[i])})</span>
+      <span class="zbar"><span class="track"></span><span class="mid"></span>
+        <span class="fill" style="background:${col};left:${v >= 0 ? 50 : 50 - w}%;width:${w}%"></span></span>
+      <span class="val">${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}</span></div>`;
+  }).join("");
+  const qa = D.action["Quantum NN"];
+  document.getElementById("qnnNote").innerHTML =
+    `Feature order written into the six qubits: ${Q.features.map(esc).join(", ")}. Current call: <b>${LBL[qa[qa.length - 1]]}</b>.`;
+}
+
+function renderHMM() {
+  const H = D.hmm, last = H.weekly[H.weekly.length - 1];
+  document.getElementById("hmmBars").innerHTML = H.labels.map((lab, i) => {
+    const p = last.probs[i], w = p * 100;
+    const on = i === last.state;
+    return `<div class="zrow"><span class="lab">${on ? "<b>" : ""}${esc(lab)}${on ? "</b>" : ""}</span>
+      <span class="zbar"><span class="track"></span>
+        <span class="fill" style="background:${on ? css("--accent") : css("--ink3")};left:0%;width:${w}%"></span></span>
+      <span class="val">${pct0(p)}</span></div>`;
+  }).join("") + H.labels.map((lab, i) =>
+    `<div class="muted" style="font-size:11px">state ${i} (${esc(lab)}): mean ${pct(H.mean_weekly_return[i])}/week, `
+    + `vol ${pct0(H.weekly_vol[i])}/week, stays ${pct0(H.persistence[i])} of weeks</div>`).join("");
+  const ha = D.action["HMM Regime"];
+  document.getElementById("hmmNote").innerHTML =
+    `Filtered on ${fmtDate(M.live_week)}: <b>${esc(last.label)}</b> at ${pct0(last.confidence)} confidence. Current call: <b>${LBL[ha[ha.length - 1]]}</b>. This describes a regime that has already started, not one that is about to.`;
+}
+
 function renderLadder() {
   const L = D.chair_effect;
   document.getElementById("ladder").innerHTML =
     `<thead><tr><th>Seat added</th><th>Sharpe before</th><th>after</th><th>difference</th><th>95% interval</th><th>Weeks changed</th><th>Excluding 2020</th><th>Verdict</th></tr></thead><tbody>` +
-    L.steps.map(s => `<tr${s.seat.includes("JEPA") ? ' class="chair"' : ""}><td>${esc(s.seat)}</td>
+    L.steps.map((s, i) => `<tr${i === L.steps.length - 1 ? ' class="chair"' : ""}><td>${esc(s.seat)}</td>
       <td>${s.sharpe_before.toFixed(2)}</td><td>${s.sharpe_after.toFixed(2)}</td>
       <td>${s.diff >= 0 ? "+" : "−"}${Math.abs(s.diff).toFixed(2)}</td>
       <td>[${s.ci95[0] >= 0 ? "+" : "−"}${Math.abs(s.ci95[0]).toFixed(2)}, ${s.ci95[1] >= 0 ? "+" : "−"}${Math.abs(s.ci95[1]).toFixed(2)}]</td>
       <td>${s.weeks_changed} of ${L.weeks}</td>
       <td>${s.ex2020_before.toFixed(2)} → ${s.ex2020_after.toFixed(2)}</td>
       <td>${esc(s.verdict)}</td></tr>`).join("") + "</tbody>";
-  const last = L.steps[L.steps.length - 1];
+  const last = L.steps[L.steps.length - 1], prev = L.steps[L.steps.length - 2];
   document.getElementById("ladderNote").innerHTML =
-    `<b>Read this before believing the jump.</b> Both new seats lost money on their own — the fundamentals seat badly — yet the committee's Sharpe rose from ${last.sharpe_before.toFixed(2)} to ${last.sharpe_after.toFixed(2)}. That can happen when a poor signal is wrong at different times from everyone else, and it is the whole case for having a committee. But the interval still includes zero, so it is <b>not proven</b>. It does survive dropping 2020 (${last.ex2020_before.toFixed(2)} → ${last.ex2020_after.toFixed(2)}), which is more than the Phantom Flow seat managed.
-    <br>The mechanism is worth knowing: the fundamentals seat was bearish for most of the test and turned an undecided FLAT into a SHORT 19 times. A permanently bearish voice looks good in any sample containing a crash and poor in one without, so treat this as a finding that needs another cycle to confirm.`;
+    `<b>Read this before believing any jump.</b> Each row is judged on its own: an 8-week block bootstrap puts a 95% interval around the Sharpe difference, and the verdict is fixed in advance — entirely above zero improved the committee, straddling zero is <b>not proven</b> whatever the headline number says, entirely below zero made it worse.
+    <br>The newest step (quantum NN + regime HMM) moved the committee's Sharpe from ${last.sharpe_before.toFixed(2)} to ${last.sharpe_after.toFixed(2)}: ${esc(last.verdict)}. ${last.survives_ex2020 ? "It survives dropping 2020." : "It does not survive dropping 2020, so treat it with more suspicion."}
+    <br>The step before it (chart JEPA + fundamentals) moved Sharpe from ${prev.sharpe_before.toFixed(2)} to ${prev.sharpe_after.toFixed(2)}: ${esc(prev.verdict)}. The mechanism there is worth knowing — the fundamentals seat was bearish for most of the test and turned an undecided FLAT into a SHORT repeatedly; a permanently bearish voice looks good in any sample containing a crash and poor in one without.`;
 }
 
 // ---------- the market's own view ----------
@@ -672,8 +733,8 @@ function renderStatic() {
 }
 
 function renderAll() { renderEquity(); renderPrice(); renderPF(); renderScore(); renderHeat(); }
-renderStatic(); renderPFStatic(); renderFamilies(); renderJepa(); renderFund(); renderLadder(); renderMarket(); renderAll();
-const rerender = () => { renderStatic(); renderPFStatic(); renderFamilies(); renderJepa(); renderFund(); renderLadder(); renderMarket(); renderAll(); };
+renderStatic(); renderPFStatic(); renderFamilies(); renderJepa(); renderFund(); renderQuantum(); renderHMM(); renderLadder(); renderMarket(); renderAll();
+const rerender = () => { renderStatic(); renderPFStatic(); renderFamilies(); renderJepa(); renderFund(); renderQuantum(); renderHMM(); renderLadder(); renderMarket(); renderAll(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
 new MutationObserver(rerender).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
 </script>
