@@ -1,5 +1,5 @@
 <title>BTC Expert Panel</title>
-<meta name="description" content="Six experts, including the Phantom Flow indicator, call Bitcoin's next week: walk-forward signals and performance since 2020.">
+<meta name="description" content="Seven experts, including the Phantom Flow indicator and the prediction market's own price, call Bitcoin's next week: walk-forward signals and performance since 2020.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -8,7 +8,7 @@
   --bg:#F3F4F6; --surface:#FFFFFF; --surface2:#F8F9FA; --ink:#14161B; --ink2:#545B69; --ink3:#7C8392; --rule:#E2E4E9;
   --accent:#B85F0E; --accent-soft:#FBEBDB;
   --long:#2a78d6; --short:#e34948; --flat:#dcdbd6; --bh:#8a8f99;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#993556; --s8:#4a3aa7;
   --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
@@ -19,7 +19,7 @@
     --bg:#0F1115; --surface:#171A20; --surface2:#1C2027; --ink:#F2F3F5; --ink2:#A9AFBC; --ink3:#7D8491; --rule:#2A2E36;
     --accent:#F29A3A; --accent-soft:#3A2A18;
     --long:#3987e5; --short:#e66767; --flat:#3a3d44; --bh:#8d93a0;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#C4617F; --s8:#9085e9;
   }
 }
 :root[data-theme="dark"]{
@@ -27,7 +27,7 @@
   --bg:#0F1115; --surface:#171A20; --surface2:#1C2027; --ink:#F2F3F5; --ink2:#A9AFBC; --ink3:#7D8491; --rule:#2A2E36;
   --accent:#F29A3A; --accent-soft:#3A2A18;
   --long:#3987e5; --short:#e66767; --flat:#3a3d44; --bh:#8d93a0;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#C4617F; --s8:#9085e9;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;margin:0}
@@ -63,6 +63,12 @@ header .facts b{color:var(--ink);font-weight:500}
 .pfgrid>div{background:var(--surface2);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
 .pfgrid .v{font-family:var(--mono);font-size:15px}
 .sens td.def{font-weight:600;outline:2px solid var(--accent);outline-offset:-2px}
+.pending{border:1px dashed var(--rule);border-radius:8px;padding:14px 16px;background:var(--surface2);color:var(--ink2);font-size:13px;display:flex;flex-direction:column;gap:8px}
+.pending b{color:var(--ink)}
+.pending code{font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:2px 6px;display:inline-block}
+.verdictbox{border-left:3px solid var(--accent);border-radius:0;padding:10px 14px;background:var(--surface2);font-size:13px;color:var(--ink2)}
+.verdictbox b{color:var(--ink)}
+.abstain{opacity:.72}
 @media (max-width:640px){.pfgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .seat .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .seat h3{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
@@ -142,7 +148,7 @@ footer a{color:var(--ink2)}
   <section aria-labelledby="calls-h" style="display:flex;flex-direction:column;gap:12px">
     <div class="panel-head" style="padding:0 2px">
       <h2 id="calls-h">Latest calls</h2>
-      <p><span id="stale"></span> Each expert gives the chance that Bitcoin is higher in 7 days. At 55% or more it goes LONG; at 45% or less, SHORT; in between, FLAT. Phantom Flow gives a confluence score instead (−3 to +3, shown on the same scale); it acts only when its trend shift and oscillator agree and structure does not contradict. The panel chair acts when at least 3 of the 6 experts agree and they outnumber those on the other side.</p>
+      <p><span id="stale"></span> Each expert gives the chance that Bitcoin is higher in 7 days. At 55% or more it goes LONG; at 45% or less, SHORT; in between, FLAT. Phantom Flow gives a confluence score instead (−3 to +3, shown on the same scale); it acts only when its trend shift and oscillator agree and structure does not contradict. The market expert is different: it is not a model but the price of prediction-market contracts, and it abstains on any week with no liquid market. The panel chair acts when at least 3 experts agree and they outnumber those on the other side.</p>
     </div>
     <div class="seats" id="seats"></div>
   </section>
@@ -194,6 +200,14 @@ footer a{color:var(--ink2)}
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"><div class="scroll"><table class="matrix sens" id="sens"></table></div><div class="scroll"><table class="matrix sens" id="sens2"></table></div></div>
   </section>
 
+  <section class="panel" aria-labelledby="mkt-h">
+    <div class="panel-head">
+      <h2 id="mkt-h">The market's own view</h2>
+      <p>The other six experts are models. This one is the crowd: what people actually pay for Bitcoin contracts. It compares the price of a +10% move with an equidistant −10% move, so a risk premium sitting on both legs cancels out.</p>
+    </div>
+    <div id="mktbody"></div>
+  </section>
+
   <div class="grid2">
     <section class="panel" aria-labelledby="yr-h">
       <div class="panel-head"><h2 id="yr-h">Calendar-year returns</h2></div>
@@ -214,7 +228,8 @@ footer a{color:var(--ink2)}
         <li><b>Jev (System One)</b>: TypeSafe AI's decision model answers "Will Bitcoin be higher in 7 days?" and names the market regime. <b>In this run it is an offline stand-in, not Jev</b>: a fixed trend-and-valuation rule.</li>
         <li><b>Mini LLM tape reader</b>: the from-scratch GPT in <span class="num">tiny-llm2</span>, trained on daily returns written as letters (a = big fall … g = big rise). It writes 256 possible next weeks and reports how many end higher.</li>
         <li><b>Phantom Flow</b>: an open re-implementation of the paid TradingView indicator's three published modules on daily closes: an ATR trend shift (ATR 10 × 3), swing structure (breaks of 5-day swing highs and lows) and an oscillator (distance from the 21-day average in ATRs). Its "combo" call needs shift and oscillator to agree and structure not to disagree. It needs no training, so it is not refitted each year.</li>
-        <li><b>Panel chair</b>: LONG or SHORT when at least 3 of the 6 experts agree and they outnumber the other side. The dashed grey line is the earlier 5-expert chair (3 of 5, no Phantom Flow), kept to show what the new expert adds.</li>
+        <li><b>Market consensus</b>: not a model. Polymarket runs Bitcoin contracts as a ladder of "will it reach $X" bets, so the prices are a picture of the range the crowd expects. The signal is the gap between what a +10% move costs and what a −10% move costs. It <b>abstains</b> whenever no liquid market existed, which is most of 2020–2024, because these markets did not exist then.</li>
+        <li><b>Panel chair</b>: LONG or SHORT when at least 3 experts agree and they outnumber the other side. The two dashed grey lines are the earlier chairs — 3 of 5 (no Phantom Flow) and 3 of 6 (no market) — kept to show what each new expert adds.</li>
       </ul>
     </section>
     <section class="panel" aria-labelledby="read-h">
@@ -225,6 +240,7 @@ footer a{color:var(--ink2)}
         <li>The mini LLM memorised the past tape: on new data its surprise (about 4.9 bits a day) was worse than blind guessing (2.8 bits), and its results faded after 2021.</li>
         <li>The Jev figures come from the stand-in. Set an API key and re-run to test the real model.</li>
         <li id="pfeffect"></li>
+        <li id="mktnote"></li>
         <li>Phantom Flow here is not the proprietary script, whose formulas are private: it follows the published description with standard formulas, uses closes only (no order blocks or fair value gaps) and cannot repaint, because a swing point only counts once the 5 days after it have closed.</li>
         <li>Research on historical data, not investment advice.</li>
       </ul>
@@ -239,15 +255,18 @@ footer a{color:var(--ink2)}
 <script>
 const D = /*__DATA__*/null;
 const NAMES = D.experts, BENCH = D.benchmarks, ALL = [...NAMES, ...BENCH], CHAIR = "Panel chair (consensus)", OLD = "Chair without Phantom Flow";
-const EXPERTS = NAMES.filter(n => n !== CHAIR);
+const EXPERTS = NAMES.filter(n => n !== CHAIR), NOMKT = "Chair without the market", MKT = "Market consensus";
+const ME = D.market_eval || {weeks_covered: 0, subperiod: {}, benchmark: null};
 const N = D.n_done;
 const SRC = {"Random Forest":"projectskf · quant research","Tabular Transformer":"projectskf · quant research",
   "Neuroplastic World Model":"neuroplastic-financial-world-model · V5","Jev (System One)":"TypeSafe AI · offline stand-in",
-  "Mini LLM tape reader":"tiny-llm2 · mini_gpt","Phantom Flow":"indicator · open re-implementation","Panel chair (consensus)":"panel rule · 3 of 6 and a majority of those taking a side"};
+  "Mini LLM tape reader":"tiny-llm2 · mini_gpt","Phantom Flow":"indicator · open re-implementation","Market consensus":"prediction market · not a model",
+  "Panel chair (consensus)":"panel rule · 3 of 7 and a majority of those taking a side"};
 const SHORTNAME = {"Random Forest":"Random Forest","Tabular Transformer":"Transformer","Neuroplastic World Model":"Neuroplastic",
-  "Jev (System One)":"Jev","Mini LLM tape reader":"Mini LLM","Phantom Flow":"Phantom Flow","Panel chair (consensus)":"Panel chair",[OLD]:"Chair w/o PF","Buy & hold":"Buy & hold"};
+  "Jev (System One)":"Jev","Mini LLM tape reader":"Mini LLM","Phantom Flow":"Phantom Flow","Market consensus":"Market","Panel chair (consensus)":"Panel chair",
+  [OLD]:"Chair w/o PF",[NOMKT]:"Chair w/o market","Buy & hold":"Buy & hold"};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const colorOf = n => n === "Buy & hold" ? css("--bh") : n === OLD ? css("--ink3") : css("--s" + (NAMES.indexOf(n) + 1));
+const colorOf = n => n === "Buy & hold" ? css("--bh") : (n === OLD || n === NOMKT) ? css("--ink3") : css("--s" + (NAMES.indexOf(n) + 1));
 const pct = (v, d = 0) => { const s = Math.abs(v * 100).toFixed(d); return (+s === 0 ? "" : v >= 0 ? "+" : "−") + s + "%"; };
 const pct0 = (v, d = 0) => (v * 100).toFixed(d) + "%";
 const fmtDate = s => new Date(s + "T00:00:00Z").toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"});
@@ -293,17 +312,21 @@ function median(a) { const s = [...a].sort((x, y) => x - y); return s[Math.floor
 const [SH, LG] = M.thresholds;
 document.getElementById("seats").innerHTML = NAMES.map(n => {
   const v = live[n], f = FULL[n];
-  return `<article class="seat${n === CHAIR ? " chair" : ""}">
+  return `<article class="seat${n === CHAIR ? " chair" : ""}${n === MKT && !ME.weeks_covered ? " abstain" : ""}">
     <div class="top"><div><h3><span class="swatch" style="background:var(--s${NAMES.indexOf(n) + 1})"></span>${esc(n)}</h3><div class="src">${esc(SRC[n])}</div></div>
       <span class="pill ${v.action}">${v.action}</span></div>
     <div><div class="meter" role="img" aria-label="${n === "Phantom Flow" ? "confluence score" : "P(up) " + pct0(v.p_up)}"><div class="track"${n === "Phantom Flow" ? ' style="background:var(--surface2)"' : ""}></div>
       ${n === "Phantom Flow" ? "" : `<div class="tick" style="left:${SH * 100}%"></div><div class="tick" style="left:${LG * 100}%"></div>`}
       <div class="dot" style="left:${Math.min(99.5, Math.max(.5, v.p_up * 100))}%"></div></div>
-      <div class="meter-labels">${n === "Phantom Flow" ? `<span>−3</span><span>confluence <b style="color:var(--ink)" class="num">${(v.p_up - .5) * 8 > 0 ? "+" : ""}${Math.round((v.p_up - .5) * 8)}</b> of 3</span><span>+3</span>` : `<span>0%</span><span>P(up) <b style="color:var(--ink)" class="num">${pct0(v.p_up)}</b></span><span>100%</span>`}</div></div>
+      <div class="meter-labels">${n === MKT && !ME.weeks_covered ? `<span></span><span>abstained: no market this week</span><span></span>` : n === "Phantom Flow" ? `<span>−3</span><span>confluence <b style="color:var(--ink)" class="num">${(v.p_up - .5) * 8 > 0 ? "+" : ""}${Math.round((v.p_up - .5) * 8)}</b> of 3</span><span>+3</span>` : `<span>0%</span><span>P(up) <b style="color:var(--ink)" class="num">${pct0(v.p_up)}</b></span><span>100%</span>`}</div></div>
     <div class="why">${esc(v.why)}</div>
-    <div class="kpis"><div class="kpi"><div class="l">Sharpe</div><div class="v">${f.sharpe.toFixed(2)}</div></div>
-      <div class="kpi"><div class="l">Hit rate</div><div class="v">${f.hit == null ? "–" : pct0(f.hit, 1)}</div></div>
-      <div class="kpi"><div class="l">Max drawdown</div><div class="v">${pct(f.maxdd)}</div></div></div>
+    ${n === MKT && !ME.weeks_covered
+      ? `<div class="kpis"><div class="kpi"><div class="l">Sharpe</div><div class="v">–</div></div>
+         <div class="kpi"><div class="l">Hit rate</div><div class="v">–</div></div>
+         <div class="kpi"><div class="l">Max drawdown</div><div class="v">–</div></div></div>`
+      : `<div class="kpis"><div class="kpi"><div class="l">Sharpe</div><div class="v">${f.sharpe.toFixed(2)}</div></div>
+         <div class="kpi"><div class="l">Hit rate</div><div class="v">${f.hit == null ? "–" : pct0(f.hit, 1)}</div></div>
+         <div class="kpi"><div class="l">Max drawdown</div><div class="v">${pct(f.maxdd)}</div></div></div>`}
   </article>`;
 }).join("");
 
@@ -350,7 +373,7 @@ function renderEquity() {
   const labels = D.dates.slice(a, b + 2);
   const sets = ALL.map(n => ({label: SHORTNAME[n], full: n, data: [1, ...D.equity[n].slice(a, b + 1).map(v => v / base(n))],
     borderColor: colorOf(n), backgroundColor: colorOf(n), borderWidth: n === CHAIR ? 3 : 1.75, pointRadius: 0, pointHoverRadius: 4,
-    borderDash: n === "Buy & hold" ? [6, 4] : n === OLD ? [2, 3] : [], tension: 0}));
+    borderDash: n === "Buy & hold" ? [6, 4] : n === OLD ? [2, 3] : n === NOMKT ? [5, 3] : n === MKT ? [8, 3] : [], tension: 0}));
   const cfg = {type: "line", data: {labels, datasets: sets}, plugins: [crosshair],
     options: {responsive: true, maintainAspectRatio: false, animation: false, interaction: {mode: "index", intersect: false},
       scales: {x: {...axisStyle(), ticks: {...axisStyle().ticks, maxTicksLimit: 8, callback: (v, i) => fmtDate(labels[i]).replace(/^\d+ /, "")}},
@@ -430,6 +453,35 @@ function renderPFStatic() {
   tbl("sens2", "Panel chair with it", "chair_sharpe", s => `max drawdown ${pct(s.chair_max_drawdown)}`, `Chair without Phantom Flow: ${FULL[OLD].sharpe.toFixed(2)}. Hover for drawdown.`);
 }
 
+// ---------- the market's own view ----------
+function renderMarket() {
+  const box = document.getElementById("mktbody");
+  if (!ME.weeks_covered) {
+    box.innerHTML = `<div class="pending"><span><b>Not fetched yet.</b> This run has no prediction-market data, so the market expert abstained on all ${N} scored weeks and the panel's results above are exactly what they were without it.</span>
+      <span>The Polymarket and Kalshi APIs are free and public, but were unreachable from the machine that built this page. To fill it in, run:</span>
+      <span><code>python code/fetch_markets.py</code> then <code>python code/panel_backtest.py --offline</code> and <code>python code/make_dashboard.py</code></span>
+      <span>Expect roughly the last 1–2 years to be covered and nothing before that: liquid Bitcoin prediction markets are recent, so there is no history to backfill.</span></div>`;
+    document.getElementById("mktnote").innerHTML = `<b>The market expert has no data in this run and abstained throughout.</b> Every number above is therefore the six-expert panel. Its own results, and the test of whether the panel beats the traded price, appear once <span class="num">fetch_markets.py</span> has been run.`;
+    return;
+  }
+  const b = ME.benchmark, S = ME.subperiod, rows = [...NAMES, ...BENCH].filter(n => S[n]);
+  const verdict = !b ? "" : `<div class="verdictbox"><b>Can the panel beat the traded price?</b>
+    Over these ${b0(ME.weeks_covered)} weeks the panel's probabilities scored <span class="num">${b.brier_panel.toFixed(4)}</span> and the market's <span class="num">${b.brier_market.toFixed(4)}</span> on Brier score, where lower is better and always saying 50% scores <span class="num">${b.brier_always_half.toFixed(4)}</span>.
+    The difference is <span class="num">${b.diff >= 0 ? "+" : "−"}${Math.abs(b.diff).toFixed(4)}</span>, 95% interval
+    <span class="num">[${b.ci95[0] >= 0 ? "+" : "−"}${Math.abs(b.ci95[0]).toFixed(4)}, ${b.ci95[1] >= 0 ? "+" : "−"}${Math.abs(b.ci95[1]).toFixed(4)}]</span> → <b>${esc(b.verdict)}</b>.
+    Direction called right: panel ${pct0(b.acc_panel, 1)}, market ${pct0(b.acc_market, 1)}.
+    ${b.market_probability_is_terminal ? "" : "<br>The market number here comes from a touch lean, not a 7-day closing probability, so treat it as indicative until Kalshi's short-dated contracts are fetched."}</div>`;
+  box.innerHTML = `<p class="muted" style="margin:0;font-size:13px">Covered <b>${ME.weeks_covered} of ${ME.weeks_total}</b> weeks (${fmtDate(ME.first)} – ${fmtDate(ME.last)}), source <span class="num">${esc(ME.source || "—")}</span>. Everything below is measured on those weeks only: judging an expert over years it was absent for would be meaningless.</p>
+    ${verdict}
+    <div class="scroll"><table id="mktsub"><thead><tr><th>Expert, on the covered weeks only</th><th>Total return</th><th>Sharpe</th><th>Max drawdown</th><th>Hit rate</th><th>Time flat</th></tr></thead><tbody>` +
+    rows.map(n => `<tr class="${n === CHAIR ? "chair" : BENCH.includes(n) ? "bench" : ""}"><td><span class="name"><span class="swatch" style="background:${colorOf(n)}"></span>${esc(SHORTNAME[n])}</span></td>
+      <td>${pct(S[n].total_return)}</td><td>${S[n].sharpe.toFixed(2)}</td><td>${pct(S[n].max_drawdown)}</td>
+      <td>${S[n].hit_rate == null ? "–" : pct0(S[n].hit_rate, 1)}</td><td>${pct0(S[n].time_flat)}</td></tr>`).join("") +
+    `</tbody></table></div>`;
+  document.getElementById("mktnote").innerHTML = `<b>The market expert covers only ${ME.weeks_covered} of ${ME.weeks_total} weeks.</b> Liquid Bitcoin prediction markets are recent, so it abstains on the rest and its record is measured on the covered weeks alone, never on the full history.`;
+}
+const b0 = n => n.toLocaleString("en-GB");
+
 // ---------- scorecard ----------
 const COLS = [["Expert", null], ["Total return", "total", pct], ["CAGR", "cagr", v => pct(v, 1)], ["Sharpe", "sharpe", v => v.toFixed(2)],
   ["Max drawdown", "maxdd", v => pct(v)], ["Volatility", "vol", v => pct0(v)], ["Hit rate", "hit", v => v == null ? "–" : pct0(v, 1)],
@@ -487,8 +539,8 @@ function renderStatic() {
 }
 
 function renderAll() { renderEquity(); renderPrice(); renderPF(); renderScore(); renderHeat(); }
-renderStatic(); renderPFStatic(); renderAll();
-const rerender = () => { renderStatic(); renderPFStatic(); renderAll(); };
+renderStatic(); renderPFStatic(); renderMarket(); renderAll();
+const rerender = () => { renderStatic(); renderPFStatic(); renderMarket(); renderAll(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
 new MutationObserver(rerender).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
 </script>

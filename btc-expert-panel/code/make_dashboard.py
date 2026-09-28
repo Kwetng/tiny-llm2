@@ -10,6 +10,8 @@ R = json.load(open(ROOT / "outputs" / "panel_results.json"))
 n_done = R["weeks"]
 R["action"]["Chair without Phantom Flow"] = R["old_chair"]["action"]
 R["p"]["Chair without Phantom Flow"] = R["old_chair"]["p"]
+R["action"]["Chair without the market"] = R["no_mkt_chair"]["action"]
+R["p"]["Chair without the market"] = R["no_mkt_chair"]["p"]
 data = {
     "experts": R["experts"], "dates": R["dates"], "price": [round(p, 2) for p in R["price"]],
     "p": {k: [round(v, 3) for v in vs] for k, vs in R["p"].items()},
@@ -19,6 +21,7 @@ data = {
     "agreement": R["agreement"], "latest": R["latest"], "n_done": n_done, "benchmarks": R["benchmarks"],
     "phantom_flow": R["phantom_flow"], "pf_sensitivity": R["pf_sensitivity"],
     "pf_effect": json.load(open(ROOT / "outputs" / "phantom_flow_effect.json")),
+    "market_eval": R["market_eval"],
     "meta": {k: R[k] for k in ("decision_model", "data_to", "live_week", "live_price", "test_start", "test_end", "cost_bp", "thresholds", "generated")},
 }
 html = (ROOT / "code" / "dashboard_template.html").read_text().replace("/*__DATA__*/null", json.dumps(data, separators=(",", ":")))

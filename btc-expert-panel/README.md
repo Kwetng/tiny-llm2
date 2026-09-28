@@ -1,6 +1,6 @@
 # BTC Expert Panel
 
-A weekly "investment committee" for Bitcoin, backtested on real data. Five AI experts from three of Kwet's projects, plus the **Phantom Flow** trading indicator, each call Bitcoin's next week LONG, FLAT or SHORT. A panel chair acts only when at least 3 of the 6 agree and they outnumber the other side. Everything is tested walk-forward, out of sample, from January 2020 to May 2026.
+A weekly "investment committee" for Bitcoin, backtested on real data. Five AI experts from three of Kwet's projects, the **Phantom Flow** trading indicator, and the **prediction market's own price** each call Bitcoin's next week LONG, FLAT or SHORT. A panel chair acts only when at least 3 agree and they outnumber the other side. Everything is tested walk-forward, out of sample, from January 2020 to May 2026.
 
 **[Open the dashboard](dashboard/index.html)** (download and open in a browser) · **[Plain-English guide](docs/panel-guide.md)** ([Word version](docs/BTC_Expert_Panel_Guide.docx))
 
@@ -16,7 +16,8 @@ A weekly "investment committee" for Bitcoin, backtested on real data. Five AI ex
 | **Jev (System One)** | TypeSafe AI decision model | Answers "Will Bitcoin be higher in 7 days?" (probability) and names the regime. **Offline stand-in in this run, not Jev** |
 | **Mini LLM tape reader** | `tiny-llm2` mini GPT | Reads the last 64 days of returns written as letters (a = big fall … g = big rise), writes 256 possible next weeks, and counts how many end higher |
 | **Phantom Flow** | Open re-implementation of the paid TradingView indicator's three published modules | Trend shift (trailing stop at 3 × ATR), swing structure (break of structure / change of character on 5-day pivots) and oscillator (distance from the 21-day average in ATRs), all on daily closes. LONG or SHORT only when trend and oscillator agree and structure does not contradict. No training; settings fixed in advance; no repainting |
-| **Panel chair** | Panel rule | LONG or SHORT if at least 3 of the 6 agree and outnumber the other side, otherwise FLAT. The earlier 3-of-5 chair is kept as a benchmark |
+| **Market consensus** | Polymarket / Kalshi BTC contracts — **not a model** | Reads the ladder of "will Bitcoin reach $X" contracts and compares what the crowd pays for a +10% move against an equidistant −10% move. Corrects for the three traps: touch ≠ close, a monthly clock against a weekly question, and the risk premium in any price. **Abstains** on every week with no liquid market |
+| **Panel chair** | Panel rule | LONG or SHORT if at least 3 agree and outnumber the other side, otherwise FLAT. The 3-of-5 and 3-of-6 chairs are kept as benchmarks |
 
 **Calls:** P(up) of 55% or more is LONG, 45% or less is SHORT, anything in between is FLAT.
 
@@ -47,6 +48,7 @@ These are after 10 bp trading costs, with no leverage.
 
 **What this shows:**
 - **The five-expert chair matched buy-and-hold's Sharpe ratio (0.93) with roughly half the worst loss** (−41% against −75%). It also had the best hit rate. In 2022, when Bitcoin fell 65%, the chair lost 9%.
+- **The market expert abstained on every week of this run**, because the Polymarket and Kalshi APIs were unreachable from the build machine. An abstaining expert changes neither the LONG nor the SHORT count, so the panel's figures above are unchanged by it. Run `python code/fetch_markets.py` to fill it in.
 - **Phantom Flow was weak alone but independent, and adding it lifted the chair to a Sharpe of 1.05.** That gain may be luck: its 95% bootstrap range is −0.20 to +0.49, and excluding 2020 the two chairs score 0.55 and 0.53. Across all 9 indicator settings tried as a check (ATR × 2–4, pivots of 3–10 days), the chair stays between 0.99 and 1.14. The honest reading is "didn't hurt, may help".
 - **The neuroplastic world model was the strongest single expert**, with a Sharpe of 1.13 against 0.93 for buy and hold. The Jev stand-in only just beat buy and hold (0.94).
 - **The two quant-project classifiers and the mini LLM underperformed buy and hold.** The mini LLM overfitted: on new data its average surprise (4.9 bits a day) was worse than blind guessing among 7 letters (2.8 bits). Its gains came in 2020–2021, and it lost money in every year from 2022 on.
@@ -70,6 +72,7 @@ The public Coin Metrics files currently end on 23 May 2026, so this is the most 
 | Jev (stand-in) | LONG | 62% | Regime: range-bound |
 | Mini LLM | LONG | 79% | 256 simulated weeks, average +4.7% |
 | Phantom Flow | FLAT | score −1 | Trend just flipped down (stop $80,716), oscillator −0.66 ATR, structure still bullish. By 23 May structure had also turned: daily SHORT |
+| Market consensus | FLAT | — | Abstained: no prediction-market data fetched in this run |
 | **Panel chair** | **FLAT** | 58% avg | 2 long, 4 flat, 0 short |
 
 \* For the world model this is a vote share, (BUY + ½ HOLD) ÷ 6, not a probability.
@@ -80,6 +83,7 @@ The public Coin Metrics files currently end on 23 May 2026, so this is the most 
 pip install torch scikit-learn pandas numpy
 cd code
 python panel_backtest.py        # downloads the data to ../data/, about 12 minutes on a laptop CPU
+python fetch_markets.py         # optional: prediction-market data (needs internet)
 python pf_effect.py             # did Phantom Flow really help? (bootstrap, ex-2020)
 python make_dashboard.py        # rebuilds ../dashboard/index.html
 pytest -q ../tests              # Phantom Flow tests, including the no-hindsight check
@@ -92,8 +96,11 @@ All seeds are fixed, so re-running should reproduce these numbers.
 |---|---|
 | `code/panel_backtest.py` | Data, features, all six experts, walk-forward loop, metrics, Phantom Flow sensitivity |
 | `code/phantom_flow.py` | The Phantom Flow re-implementation: trend shift, structure, oscillator, combined call |
+| `code/prediction_market.py` | The market expert: question parsing, the touch ladder, the symmetric lean, the touch→close correction, abstention rules |
+| `code/fetch_markets.py` | Builds the weekly market cache from Polymarket or Kalshi (run where there is internet) |
 | `code/pf_effect.py` | Bootstrap and ex-2020 check of what Phantom Flow adds to the chair |
 | `tests/test_phantom_flow.py` | 6 tests: no look-ahead, trend flips, stop ratchet, BOS/CHoCH, combo rule |
+| `tests/test_prediction_market.py` | 20 tests: question parsing, a symmetric ladder giving zero lean, a common premium cancelling, abstention instead of extrapolation, the touch→close halving, and the documented API response shapes |
 | `code/jev_market.py` | Jev API client and the offline stand-in |
 | `code/dashboard_template.html`, `code/make_dashboard.py` | The dashboard |
 | `outputs/` | `panel_results.json`, `weekly_signals.csv`, `performance_summary.csv`, `yearly_returns.csv`, `weekly_features.csv`, `phantom_flow_daily.csv`, `phantom_flow_sensitivity.csv`, `phantom_flow_effect.json` |
@@ -110,6 +117,7 @@ All seeds are fixed, so re-running should reproduce these numbers.
 - **neuroplastic-financial-world-model V5:**
   - The architecture, loss (0.3 × next state + 1.0 × next return), 180 epochs, six seeds, 4-of-6 vote and uncertainty penalty are all kept.
   - The monthly EUR/USD macro world is replaced by the weekly Bitcoin world, and the cost is 10 bp instead of 1 bp.
+- **Prediction markets:** the signal is a *difference* between two symmetric contracts rather than a raw probability, which cancels the risk premium common to both legs. Touch contracts are never read as closing-price forecasts. Where the ladder does not bracket a ±10% move, the expert abstains rather than extrapolating.
 - **Phantom Flow:** the proprietary Pine Script is closed, so each published module is rebuilt with the standard method. Order blocks and fair value gaps are omitted because they need intraday highs and lows. **It is not the paid indicator.**
 - **tiny-llm2 mini GPT:** the same architecture, with 7 "letters" for daily-return buckets instead of text characters. It is retrained each January.
 

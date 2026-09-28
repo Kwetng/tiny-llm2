@@ -1,5 +1,5 @@
 \title BTC Expert Panel
-\subtitle A plain-English guide to six experts, including the Phantom Flow indicator, calling Bitcoin's next week
+\subtitle A plain-English guide to seven experts — six models, one market — calling Bitcoin's next week
 \subtitle Walk-forward results on real data, January 2020 – May 2026
 
 \pagebreak
@@ -19,12 +19,13 @@ This project builds that committee for **Bitcoin**, using AI models from three o
 - **Jev:** a decision model that returns a calibrated probability. This run uses an offline stand-in (see section 7).
 - **The mini LLM**, built from scratch, reading the market's daily moves as if they were text.
 - **Phantom Flow:** a technical indicator that combines a trend filter, market structure and momentum. This is an open re-implementation of the paid TradingView indicator (see section 3.6).
+- **The market itself:** not a model at all, but the price of Bitcoin prediction-market contracts — what thousands of people are actually paying (see section 3.7).
 
-Every Sunday, each expert says whether Bitcoin will be **higher in 7 days**. A **panel chair** then acts only if at least 3 of the 6 agree and they outnumber those on the other side.
+Every Sunday, each expert says whether Bitcoin will be **higher in 7 days**. A **panel chair** then acts only if at least 3 agree and they outnumber those on the other side.
 
 Everything is tested **walk-forward**. Each January the models are retrained using only data from before that year, then used unchanged for the whole year, so no model ever sees the future. The test runs from January 2020 to May 2026: 332 weeks.
 
-> **In one sentence:** six different experts vote on Bitcoin each week. On its own none beats simply holding Bitcoin by much. The five-expert committee matched buy-and-hold's risk-adjusted return with roughly half the worst loss, and adding Phantom Flow lifted it further, though that gain may be luck (section 5).
+> **In one sentence:** seven different experts vote on Bitcoin each week. On its own none beats simply holding Bitcoin by much. The five-expert committee matched buy-and-hold's risk-adjusted return with roughly half the worst loss, and adding Phantom Flow lifted it further, though that gain may be luck (section 5).
 
 ![Figure 1 — The dashboard: latest verdict and each expert's call](img/docs_img_top.png)
 
@@ -126,11 +127,48 @@ So the last 14 days before the latest call read **"ffebdefcbbfabc"**. The model 
 
 **Latest call:** FLAT, confluence −1. On Sunday 17 May the trend had just flipped down (stop $80,716) and the oscillator was −0.66 ATR, but structure was still bullish. By 23 May, the last day of data, structure had also turned down, which is a daily SHORT signal.
 
-## 3.7 The panel chair
+## 3.7 Market consensus (prediction markets)
 
-**What it is:** a simple rule. LONG if at least 3 of the 6 experts say LONG and they outnumber those saying SHORT. SHORT is the mirror image; otherwise FLAT.
+**What it is:** the only seat that is not a model. A **prediction market** is a market where you buy a contract that pays £1 if something happens and nothing if it doesn't, so its price is a probability: a contract trading at 31p means the crowd thinks there is about a 31% chance. Polymarket and Kalshi both run Bitcoin contracts, and by September 2026 the two together were trading tens of billions of dollars a month.
 
-When Phantom Flow is FLAT, this is exactly the old 3-of-5 rule. So any difference in results comes from Phantom Flow's vote. The old chair is kept on the dashboard as "Chair without Phantom Flow".
+**Why a panel wants one.** Six models can all be wrong in the same way, because they all learn from the same history. The market is a different kind of witness: it is thousands of people with their own money at stake, and whatever they collectively know is already in the price.
+
+**What the contracts look like.** Polymarket runs Bitcoin as a *ladder* of questions on the same expiry:
+
+| Contract | Price | What the crowd is saying |
+|---|---|---|
+| Will Bitcoin reach $150,000 in March? | 0.18 | 18% chance it touches $150k |
+| Will Bitcoin reach $120,000 in March? | 0.44 | 44% chance it touches $120k |
+| Will Bitcoin dip to $80,000 in March? | 0.37 | 37% chance it touches $80k |
+| Will Bitcoin dip to $65,000 in March? | 0.11 | 11% chance it touches $65k |
+
+Read together, that ladder is a picture of the range the market expects.
+
+**Three traps, and what this project does about each.** These are the reason the seat took work rather than being a one-line lookup.
+
+| Trap | The problem | The fix here |
+|---|---|---|
+| **"Reach" is not "close"** | "Will Bitcoin reach $150k in March" asks whether it *ever touches* that level, not where it ends the month. A price that spikes to $150k and falls back still pays out. Mathematically (the reflection principle, for a coin-flip random walk) touching is about **twice** as likely as ending up past it, so reading the ladder as a forecast of the closing price makes every number roughly double | The vote never uses the ladder as a closing-price forecast. Where a closing probability really is needed, `touch_to_terminal()` halves it and says out loud that it assumes no drift |
+| **Wrong clock** | These contracts run to a fixed month end. Sitting on 1 March, the question covers 31 days; sitting on 28 March, 3 days. The panel is asking about 7 days | The *direction* of the tilt survives a change of horizon; its *size* does not. So the tilt decides LONG, FLAT or SHORT, and nothing else is read from its magnitude |
+| **A price is not a pure forecast** | Buying a contract ties up money for months and carries risk, so the price includes a premium. It is a price, not an opinion poll | The signal is a **difference** between two contracts the same distance either side of today's price. A premium sitting on both legs cancels out |
+
+**The signal, in one line:**
+
+> **lean = (price of a +10% move) − (price of a −10% move)**
+
+Both legs are the same distance from today's price, on the same expiry, in the same market. A positive lean means the crowd pays more for the upside. Above +0.06 the expert votes LONG, below −0.06 SHORT, and in between FLAT.
+
+**A worked example.** Bitcoin is at $100,000. The ladder gives a 45% chance of touching $110,000 and a 25% chance of touching $90,000. The lean is 0.45 − 0.25 = **+0.20**, comfortably past the threshold, so the seat votes LONG. Note what we did *not* do: we did not claim a 45% chance of ending the week above $110,000.
+
+**When it says nothing.** If the ladder has fewer than two strikes on either side, or if a ±10% move falls outside the quoted strikes, the code returns nothing and the seat **abstains** (FLAT). It never extrapolates, because extrapolating a probability means inventing one.
+
+**The honest limitation, and it is a big one.** Liquid Bitcoin prediction markets are recent. The panel's history starts in January 2020; these markets barely existed before 2024. So this seat abstains for most of the backtest, and it is judged only on the weeks it actually covered (section 5). Any claim about its record over the full 332 weeks would be meaningless.
+
+## 3.8 The panel chair
+
+**What it is:** a simple rule. LONG if at least 3 experts say LONG and they outnumber those saying SHORT. SHORT is the mirror image; otherwise FLAT.
+
+Because an abstaining expert changes neither count, a week where the market seat is silent gives exactly the answer the six-expert panel would have given. That makes the comparison clean, and the dashboard keeps both earlier chairs — "Chair without Phantom Flow" (3 of 5) and "Chair without the market" (3 of 6) — so you can see what each new seat added.
 
 **Latest call:** FLAT. Two experts said LONG (Jev and the mini LLM), four said FLAT, none said SHORT.
 
@@ -146,7 +184,8 @@ The latest call was for the week after **17 May 2026**, with Bitcoin at **$77,49
 | Jev (stand-in) | 62% | LONG | Above 55%; regime range-bound |
 | Mini LLM | 79% | LONG | 203 of 256 imagined weeks ended higher |
 | Phantom Flow | score −1 | FLAT | Trend down, oscillator negative, structure still bullish |
-| **Panel chair** | — | **FLAT** | Only 2 of 6 LONG; needs 3 |
+| Market consensus | — | FLAT | **Abstained:** no prediction-market data was fetched for this run (section 5) |
+| **Panel chair** | — | **FLAT** | Only 2 LONG; needs 3 |
 
 The committee stays out of the market. The two confident experts are the stand-in rule and the model that memorised the past, which is exactly the kind of situation where waiting for broader agreement protects you.
 
@@ -204,6 +243,37 @@ The committee stays out of the market. The two confident experts are the stand-i
 
 **The 2022 crash is the clearest example.** Bitcoin fell 65%. The five-expert chair lost 9%, and the six-expert chair broke even. In 2025, when Bitcoin fell 7%, the chairs gained 30% and 34%.
 
+## What the market expert did
+
+**Nothing, in this run — and that is reported rather than hidden.** The Polymarket and Kalshi APIs are free and public, but neither was reachable from the machine that built this guide, so the seat abstained on all 332 weeks. Because an abstaining expert changes neither the LONG count nor the SHORT count, **every number in this section is exactly what the six-expert panel produced.** No result here depends on the new seat.
+
+To fill it in, run `python code/fetch_markets.py` on a machine with internet access and re-run the panel. Expect roughly the last one to two years to be covered and nothing before that.
+
+Once there is data, two things appear automatically:
+
+1. **A fair sub-period table.** Every expert is re-scored on the weeks the market seat actually covered, because comparing a seat that was present for 60 weeks with one present for 332 is not a comparison.
+2. **The benchmark test**, below.
+
+![Figure 4 — The market's own view on the dashboard, waiting for data](img/docs_img_market.png)
+
+## The benchmark: can the panel beat the traded price?
+
+This is the sharpest question in the whole project, and worth more than beating buy-and-hold.
+
+A prediction-market price is a forecast that people are paid to get right and lose money for getting wrong. If the panel's probabilities are no better than that price, then whatever the panel knows is already public. That is the **efficient-market null hypothesis**, and the honest thing is to test it rather than avoid it.
+
+**How it is scored.** Both the panel and the market give a probability each week; then the week happens. The **Brier score** measures how far a probability was from what occurred — square the error and average it, so lower is better. Saying "50%" every week scores 0.25. The test resamples the weeks 4,000 times to put a 95% interval around the gap, exactly as was done for Phantom Flow.
+
+**The rule is fixed before the answer is known:**
+
+| If the interval for (panel − market) is… | Verdict |
+|---|---|
+| Entirely below zero | The panel genuinely beats the traded price |
+| Entirely above zero | The market beats the panel |
+| Straddling zero | **No measurable difference: the panel does not beat the traded price.** The panel may still be useful for sizing risk and cutting drawdowns, but it has no informational edge |
+
+**One caveat built into the output.** Polymarket's contracts are "will it touch" bets over a month, not "where will it close in 7 days", so a probability derived from them is indicative rather than like-for-like. Kalshi's short-dated contracts quote a genuine closing-price distribution, and when those are the source the dashboard says so.
+
 ## Did adding Phantom Flow really help?
 
 A better number is not the same as a real improvement, so three checks were run.
@@ -222,7 +292,7 @@ Sharpe ratios over the whole test. Bold is the setting used, fixed in advance. F
 
 **Every setting leaves the chair between 0.99 and 1.14, above 0.93.** Phantom Flow alone varies much more, from 0.41 to 0.98. Longer pivots (10 days) did best, but choosing them now would be tuning on the test, so the fixed setting stays.
 
-![Figure 4 — Phantom Flow on the dashboard: trailing stop, structure breaks and oscillator (2025 shown)](img/docs_img_phantom.png)
+![Figure 5 — Phantom Flow on the dashboard: trailing stop, structure breaks and oscillator (2025 shown)](img/docs_img_phantom.png)
 
 **Verdict:** Phantom Flow earns its seat as an independent voice. It changed the chair's call in 57 of 332 weeks, and the committee did at least as well with it. But the evidence that it *improves* the committee is weak and depends mainly on 2020. The honest claim is "it didn't hurt, and it may help".
 
@@ -240,6 +310,8 @@ The experts often disagree. For example, the world model and the transformer mad
 - **No peeking:** the transformer no longer selects its best training round using test data.
 - **Trading costs:** 0.10% per position change.
 - **No leverage:** positions are fully in, fully out, or fully short.
+- **Abstention, not guessing:** the market expert returns nothing when the ladder does not bracket a ±10% move, and the panel treats that as FLAT. It never extrapolates a price it cannot see.
+- **The rules were written down first:** both the Phantom Flow check and the market benchmark had their pass/fail conditions fixed before the numbers existed.
 - **Fixed indicator settings:** Phantom Flow's settings were chosen before the test and never tuned. Other settings are shown only as a check.
 - **No repainting:** swing points count only after they are confirmed, and a test proves no indicator value uses later data.
 - **Reproducible:** all random seeds are fixed. A second full run gave identical results, apart from rounding at the 16th decimal place.
@@ -249,6 +321,8 @@ The experts often disagree. For example, the world model and the transformer mad
 
 - **One historical path.** 332 weeks is one run of history. A different period could rank the experts differently.
 - **A friendly period for holding Bitcoin.** 2020–2021 was a strong bull market, so buy-and-hold is hard to beat on raw return.
+- **The market expert covers a short window at best.** Liquid Bitcoin prediction markets are recent, so it can never be tested over the same 332 weeks as the models. Judge it only on its own sub-period.
+- **Prediction-market prices carry a risk premium** and are not pure forecasts. Taking the difference between two symmetric contracts removes most of it, but not all.
 - **Phantom Flow here is not the paid indicator.** It follows the published description with standard formulas, on daily closes only. Its gain for the committee may be luck (section 5).
 - **The Jev results are not Jev.** They come from a hand-written trend-and-valuation rule. Re-run with an API key to test the real model.
 - **Weekly shorting assumes it is possible and cheap.** Real short positions cost funding and borrowing fees that are not included.
@@ -261,6 +335,7 @@ The experts often disagree. For example, the world model and the transformer mad
 cd btc-expert-panel/code
 pip install torch scikit-learn pandas numpy
 python panel_backtest.py      # downloads data, trains, tests (about 10 minutes)
+python fetch_markets.py       # optional: prediction-market data (needs internet; adds expert 7)
 python pf_effect.py           # did Phantom Flow help? (bootstrap, ex-2020)
 python make_dashboard.py      # rebuilds ../dashboard/index.html
 pytest -q ../tests            # Phantom Flow tests, including the no-hindsight check
@@ -269,7 +344,7 @@ export TYPESAFE_API_KEY=...   # optional: use the real Jev
 
 # 9. How to present it
 
-> "I put models from three of my projects on one committee for Bitcoin and tested them honestly: annual walk-forward retraining, costs included, no look-ahead. I even fixed a test-set leak in my own earlier code. The finding I'd highlight isn't the best single model; it's that a simple committee vote kept buy-and-hold's risk-adjusted return while cutting the worst loss from 75% to 41%. When I added a popular trading indicator, Phantom Flow, it was weak on its own but lifted the committee's Sharpe from 0.93 to 1.05. I then showed that gain is statistically weak and mostly from one year, so I report it as 'didn't hurt, may help'. I'd also point out the mini LLM's failure: it memorised the past, and its surprise score on new data was a warning sign I could have used to switch it off."
+> "I put models from three of my projects on one committee for Bitcoin and tested them honestly: annual walk-forward retraining, costs included, no look-ahead. I even fixed a test-set leak in my own earlier code. The finding I'd highlight isn't the best single model; it's that a simple committee vote kept buy-and-hold's risk-adjusted return while cutting the worst loss from 75% to 41%. When I added a popular trading indicator, Phantom Flow, it was weak on its own but lifted the committee's Sharpe from 0.93 to 1.05. I then showed that gain is statistically weak and mostly from one year, so I report it as 'didn't hurt, may help'. The seventh seat is a prediction market rather than a model, which lets me ask the question I actually care about: can the panel beat a price that people are paid to get right? I set the pass condition before seeing the answer, and I had to handle the fact that those contracts pay on touching a level rather than closing past it — about a factor of two if you read them naively. I'd also point out the mini LLM's failure: it memorised the past, and its surprise score on new data was a warning sign I could have used to switch it off."
 
 # 10. Glossary
 
@@ -293,3 +368,9 @@ export TYPESAFE_API_KEY=...   # optional: use the real Jev
 | Change of character (CHoCH) | Price closes beyond the last swing point against the trend: a possible reversal |
 | Repainting | An indicator redrawing its past signals with information that was not available at the time |
 | Block bootstrap | Re-drawing the history in chunks many times to see how much a result could vary by luck |
+| Prediction market | A market in contracts that pay £1 if something happens, so the price reads as a probability |
+| Touch (barrier) contract | Pays out if the price *ever* reaches a level, not just if it ends there — roughly twice as likely |
+| Terminal contract | Pays out on where the price *closes* at a set moment; Kalshi's Bitcoin ranges are these |
+| Lean | The gap between what the crowd pays for an up move and for an equal-sized down move |
+| Brier score | How far a probability was from what happened: lower is better, and always saying 50% scores 0.25 |
+| Efficient-market null | The assumption that a traded price already contains everything knowable, so no model should beat it |

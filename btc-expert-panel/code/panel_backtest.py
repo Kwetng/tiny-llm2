@@ -12,9 +12,13 @@ Experts (each gives a weekly LONG / FLAT / SHORT call for the next 7 days):
   6. Phantom Flow             - open re-implementation of the Phantom Flow indicator's three modules
                                 (ATR trend shift, swing structure BOS/CHoCH, MA oscillator) on daily closes;
                                 acts only when Shift and Oscillator agree and structure does not contradict
-  7. Panel chair (consensus)  - LONG or SHORT only if at least 3 of the 6 experts agree AND more agree than
-                                oppose, otherwise FLAT. The earlier 5-expert chair (3 of 5, no Phantom Flow)
-                                is kept as a benchmark, "Chair without Phantom Flow".
+  7. Market consensus         - not a model: the price of BTC prediction-market contracts. Compares what
+                                the crowd pays for a +10% move against an equidistant -10% move (see
+                                prediction_market.py). ABSTAINS (FLAT) on every week with no liquid market,
+                                which is most of 2020-2024, because these markets did not exist then.
+  8. Panel chair (consensus)  - LONG or SHORT only if at least 3 experts agree AND more agree than oppose,
+                                otherwise FLAT. Two earlier chairs are kept as benchmarks: "Chair without
+                                Phantom Flow" (3 of 5) and "Chair without the market" (3 of 6).
 
 Data: Coin Metrics community data (CC BY-NC 4.0) - price, MVRV, active addresses, hash rate,
 exchange flows - plus the CBOE VIX (datasets/finance-vix). Both are fetched from GitHub.
@@ -42,6 +46,7 @@ from sklearn.preprocessing import StandardScaler
 
 from jev_market import get_jev
 import phantom_flow
+import prediction_market
 
 OFFLINE = "--offline" in sys.argv
 HERE = Path(__file__).resolve().parent
@@ -256,8 +261,13 @@ def to_action(p):
 # =============================================================================
 jev = get_jev(offline=OFFLINE)
 print(f"Jev: {jev.name}")
-EXPERTS = ["Random Forest", "Tabular Transformer", "Neuroplastic World Model", "Jev (System One)", "Mini LLM tape reader", "Phantom Flow"]
+EXPERTS = ["Random Forest", "Tabular Transformer", "Neuroplastic World Model", "Jev (System One)",
+           "Mini LLM tape reader", "Phantom Flow", "Market consensus"]
 OLD_CHAIR = "Chair without Phantom Flow"          # the original 5-expert rule, kept for comparison
+NO_MKT_CHAIR = "Chair without the market"         # the 6-expert rule, to isolate what expert 7 adds
+MKT = prediction_market.WeeklySignals(DATA / "prediction_market.json")
+print(f"Prediction market: {len(MKT)} weeks cached"
+      + ("" if MKT.available else " - none. Expert 7 abstains on every week; run code/fetch_markets.py."))
 rows = []
 test = wk.loc[f"{TEST_START}-01-01":]
 t_all = time.time()
@@ -284,23 +294,32 @@ for year in sorted(set(test.index.year)):
         p_llm, mu_llm, surprise, tape = tape_forecast(llm, recent, int(date.strftime("%Y%m%d")))
         pf = PF.loc[:date].iloc[-1]                   # Phantom Flow state at the Sunday close
         p_pf = phantom_flow.p_up(int(pf.score))
+        mkt = MKT.get(date)                           # None on weeks with no liquid contract
+        mkt_lean = None if mkt is None else float(mkt["lean"])
+        p_mkt = 0.5 if mkt_lean is None else prediction_market.p_up_from_lean(mkt_lean)
         acts = {"Random Forest": to_action(p_rf), "Tabular Transformer": to_action(p_tf),
                 "Neuroplastic World Model": {"BUY": 1, "SELL": -1, "HOLD": 0}[v5_sig],
                 "Jev (System One)": to_action(p_jev), "Mini LLM tape reader": to_action(p_llm),
-                "Phantom Flow": int(pf.call)}
+                "Phantom Flow": int(pf.call), "Market consensus": prediction_market.vote(mkt_lean)}
         old5 = [acts[e] for e in EXPERTS[:5]]
         acts[OLD_CHAIR] = 1 if old5.count(1) >= 3 else -1 if old5.count(-1) >= 3 else 0
+        six = [acts[e] for e in EXPERTS[:6]]
+        nl6, ns6 = six.count(1), six.count(-1)
+        acts[NO_MKT_CHAIR] = 1 if (nl6 >= 3 and nl6 > ns6) else -1 if (ns6 >= 3 and ns6 > nl6) else 0
         n_long, n_short = sum(acts[e] == 1 for e in EXPERTS), sum(acts[e] == -1 for e in EXPERTS)
         acts["Panel chair (consensus)"] = 1 if (n_long >= 3 and n_long > n_short) else -1 if (n_short >= 3 and n_short > n_long) else 0
         rows.append({"date": date, "price": row.price, "next_ret": row.next_ret,
                      "p": {"Random Forest": p_rf, "Tabular Transformer": p_tf, "Neuroplastic World Model": p_v5,
                            "Jev (System One)": p_jev, "Mini LLM tape reader": p_llm, "Phantom Flow": p_pf,
+                           "Market consensus": p_mkt,
                            OLD_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm])),
-                           "Panel chair (consensus)": float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm, p_pf]))},
+                           NO_MKT_CHAIR: float(np.mean([p_rf, p_tf, p_v5, p_jev, p_llm, p_pf])),
+                           "Panel chair (consensus)": float(np.mean(
+                               [p_rf, p_tf, p_v5, p_jev, p_llm, p_pf] + ([p_mkt] if mkt_lean is not None else [])))},
                      "action": acts,
                      "detail": {"rf_top_features": [(f, round(float(v), 3)) for f, v in imp], "v5_votes": vc, "v5_pred": v5_mu,
                                 "regime": regime, "llm_mean": mu_llm, "llm_surprise": surprise, "tape": tape,
-                                "n_long": n_long, "n_short": n_short,
+                                "n_long": n_long, "n_short": n_short, "market": mkt,
                                 "pf": {"shift": int(pf["shift"]), "structure": int(pf.structure), "osc": float(pf.osc),
                                        "stop": float(pf.stop), "score": int(pf.score)}}})
     print(f"  {year}: trained on {len(tr)} weeks, predicted {sum(test.index.year == year)} weeks ({time.time() - t0:.0f}s)")
@@ -310,7 +329,7 @@ print(f"walk-forward done in {time.time() - t_all:.0f}s")
 # 4. PERFORMANCE
 # =============================================================================
 NAMES = EXPERTS + ["Panel chair (consensus)"]
-BENCH = [OLD_CHAIR, "Buy & hold"]
+BENCH = [NO_MKT_CHAIR, OLD_CHAIR, "Buy & hold"]
 dates = [r["date"] for r in rows]
 done = [r for r in rows if not pd.isna(r["next_ret"])]          # weeks whose outcome is known
 simple = np.array([math.expm1(r["next_ret"]) for r in done])
@@ -343,6 +362,75 @@ def metrics(n):
 perf = {n: metrics(n) for n in NAMES + BENCH}
 agree = {a: {b: float(np.mean(series[a]["action"] == series[b]["action"])) for b in NAMES} for a in NAMES}
 
+# =============================================================================
+# 4b. THE MARKET EXPERT: a fair sub-period, and the efficient-market benchmark
+#     The market expert cannot be judged over 332 weeks it was absent for, and the panel
+#     cannot claim to beat the crowd on weeks where there was no crowd. Both are measured
+#     only on the overlap, and the rule for what counts as a win is fixed here, in advance.
+# =============================================================================
+mask = np.array([MKT.get(r["date"]) is not None for r in done])
+up = (simple > 0).astype(float)
+
+
+def brier(p, y):
+    return float(np.mean((np.asarray(p) - np.asarray(y)) ** 2))
+
+
+def sub_metrics(n, m):
+    """Return of an expert over a subset of weeks, with turnover re-derived inside it."""
+    a = series[n]["action"][m]
+    if not len(a):
+        return None
+    r = a * simple[m] - COST * np.abs(np.diff(np.concatenate([[0], a])))
+    eq = np.cumprod(1 + r)
+    act = a != 0
+    return {"weeks": int(m.sum()), "total_return": float(eq[-1] - 1),
+            "sharpe": float(r.mean() / r.std(ddof=1) * math.sqrt(52)) if r.std(ddof=1) > 0 else 0.0,
+            "max_drawdown": float((eq / np.maximum.accumulate(eq) - 1).min()),
+            "hit_rate": float((np.sign(a) == np.sign(simple[m]))[act].mean()) if act.any() else None,
+            "time_flat": float((a == 0).mean())}
+
+
+market_eval = {"weeks_covered": int(mask.sum()), "weeks_total": int(len(done)),
+               "first": None, "last": None, "subperiod": {}, "benchmark": None,
+               "source": MKT.meta.get("source"), "k": MKT.meta.get("k")}
+if mask.any():
+    covered = [r["date"] for r, keep in zip(done, mask) if keep]
+    market_eval["first"], market_eval["last"] = str(covered[0].date()), str(covered[-1].date())
+    market_eval["subperiod"] = {n: sub_metrics(n, mask) for n in NAMES + BENCH}
+
+    # --- the benchmark: can the panel's probabilities beat the traded price? ---
+    p_panel = np.array([r["p"]["Panel chair (consensus)"] for r in done])[mask]
+    p_mkt = np.array([(lambda q: q.get("p_up_terminal", prediction_market.p_up_from_lean(q["lean"])))(
+        MKT.get(r["date"])) for r, keep in zip(done, mask) if keep])
+    y = up[mask]
+    rng2 = np.random.default_rng(5)
+    diffs = [brier(p_panel[i], y[i]) - brier(p_mkt[i], y[i])
+             for i in (rng2.integers(0, len(y), len(y)) for _ in range(4000))]
+    d_lo, d_hi = np.percentile(diffs, [2.5, 97.5])
+    terminal = all("p_up_terminal" in (MKT.get(r["date"]) or {}) for r, keep in zip(done, mask) if keep)
+    market_eval["benchmark"] = {
+        "brier_panel": brier(p_panel, y), "brier_market": brier(p_mkt, y),
+        "brier_always_half": brier(np.full(len(y), 0.5), y),
+        "diff": brier(p_panel, y) - brier(p_mkt, y), "ci95": [float(d_lo), float(d_hi)],
+        "p_panel_no_better": float(np.mean(np.array(diffs) >= 0)),
+        "acc_panel": float(np.mean((p_panel > 0.5) == (y > 0.5))),
+        "acc_market": float(np.mean((p_mkt > 0.5) == (y > 0.5))),
+        "market_probability_is_terminal": bool(terminal),
+        "verdict": ("panel beats the market" if d_hi < 0 else
+                    "market beats the panel" if d_lo > 0 else
+                    "no measurable difference: the panel does not beat the traded price")}
+    b = market_eval["benchmark"]
+    print(f"\n[MARKET EXPERT] {mask.sum()} of {len(done)} weeks covered ({market_eval['first']} to {market_eval['last']})")
+    print(f"  Brier (lower is better): panel {b['brier_panel']:.4f} vs market {b['brier_market']:.4f} "
+          f"(always 50%: {b['brier_always_half']:.4f})")
+    print(f"  difference {b['diff']:+.4f}, 95% interval [{b['ci95'][0]:+.4f}, {b['ci95'][1]:+.4f}] -> {b['verdict']}")
+    if not terminal:
+        print("  NOTE: the market probability is derived from a touch lean, not a 7-day closing"
+              " probability. Fetch Kalshi terminal contracts for a like-for-like comparison.")
+else:
+    print("\n[MARKET EXPERT] no weeks covered: it abstained throughout, so the panel is unchanged.")
+
 print(f"\nOut-of-sample {dates[0].date()} to {done[-1]['date'].date()} ({len(done)} weeks)")
 print(f"  {'Expert':28s} {'Total':>9s} {'CAGR':>7s} {'Sharpe':>7s} {'MaxDD':>7s} {'Hit':>6s} {'Long':>5s} {'Short':>6s}")
 for n, m in perf.items():
@@ -364,7 +452,12 @@ why = {
     "Phantom Flow": (lambda q: f"Shift {'up' if q['shift'] > 0 else 'down'} (stop ${q['stop']:,.0f}), structure "
                      f"{ {1: 'bullish', -1: 'bearish', 0: 'none yet'}[q['structure']] }, oscillator {q['osc']:+.2f} ATR; "
                      f"confluence {q['score']:+d} of 3.")(d["pf"]),
-    "Panel chair (consensus)": f"{d['n_long']} of 6 experts LONG, {d['n_short']} SHORT; needs 3 and a majority of those taking a side.",
+    "Market consensus": ("No liquid BTC prediction market for this week, so it abstains."
+                         if d["market"] is None else
+                         f"The crowd pays {d['market']['p_touch_up']:.0%} for a +{d['market']['k']:.0%} move and "
+                         f"{d['market']['p_touch_down']:.0%} for -{d['market']['k']:.0%}, a lean of "
+                         f"{d['market']['lean']:+.2f} ({d['market']['days_to_expiry']:.0f} days to expiry)."),
+    "Panel chair (consensus)": f"{d['n_long']} of {len(EXPERTS)} experts LONG, {d['n_short']} SHORT; needs 3 and a majority of those taking a side.",
 }
 # ---- Phantom Flow: daily series for the dashboard + parameter sensitivity (reported, not used to choose) ----
 pfd = PF.loc[dates[0]:]
@@ -407,6 +500,9 @@ result = {"generated": time.strftime("%Y-%m-%d"), "decision_model": jev.name, "a
           "regime": [r["detail"]["regime"] for r in rows],
           "llm_surprise": [float(r["detail"]["llm_surprise"]) for r in rows],
           "benchmarks": BENCH, "old_chair": {"action": [int(r["action"][OLD_CHAIR]) for r in rows], "p": [float(r["p"][OLD_CHAIR]) for r in rows]},
+          "no_mkt_chair": {"action": [int(r["action"][NO_MKT_CHAIR]) for r in rows], "p": [float(r["p"][NO_MKT_CHAIR]) for r in rows]},
+          "market_eval": market_eval,
+          "market_weekly": [r["detail"]["market"] for r in rows],
           "phantom_flow": pf_daily, "pf_sensitivity": pf_sens, "pf_params": phantom_flow.DEFAULTS,
           "perf": perf, "agreement": agree, "latest": latest,
           "sources": {"Coin Metrics community data (CC BY-NC 4.0)": SOURCES["btc.csv"],
@@ -415,6 +511,7 @@ json.dump(result, open(OUT / "panel_results.json", "w"), indent=1, default=float
 pd.DataFrame({"date": result["dates"], "price": result["price"],
               **{f"{n} action": result["action"][n] for n in NAMES}, **{f"{n} P(up)": result["p"][n] for n in NAMES},
               f"{OLD_CHAIR} action": result["old_chair"]["action"],
+              f"{NO_MKT_CHAIR} action": result["no_mkt_chair"]["action"],
               "Jev regime": result["regime"]}).to_csv(OUT / "weekly_signals.csv", index=False)
 pd.DataFrame({n: {k: v for k, v in m.items() if k not in ("equity", "yearly")} for n, m in perf.items()}).T.to_csv(OUT / "performance_summary.csv")
 pd.DataFrame({n: m["yearly"] for n, m in perf.items()}).T.to_csv(OUT / "yearly_returns.csv")
